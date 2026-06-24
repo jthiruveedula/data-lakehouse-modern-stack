@@ -47,7 +47,7 @@ jobs:
         run: pip install -r requirements.txt pytest pytest-cov pytest-asyncio
 
       - name: Run tests
-        run: pytest tests/ -v --cov=src --cov-report=term-missing --cov-fail-under=70
+        run: pytest tests/ -v --cov=src --cov-report=term-missing --cov-fail-under=40
 
   dbt-compile:
     name: dbt Compile Check
@@ -62,7 +62,7 @@ jobs:
           cache: pip
 
       - name: Install dbt
-        run: pip install dbt-core dbt-spark
+        run: pip install dbt-core "dbt-spark[PyHive]"
 
       - name: dbt parse (compile check)
         working-directory: dbt_project

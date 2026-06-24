@@ -30,12 +30,23 @@ resource "google_storage_bucket" "lakehouse" {
   versioning { enabled = true }
 
   lifecycle_rule {
-    condition { age = 30; storage_class = "STANDARD" }
-    action { type = "SetStorageClass"; storage_class = "NEARLINE" }
+    condition {
+      age                   = 30
+      matches_storage_class = ["STANDARD"]
+    }
+    action {
+      type          = "SetStorageClass"
+      storage_class = "NEARLINE"
+    }
   }
   lifecycle_rule {
-    condition { age = 365 }
-    action { type = "SetStorageClass"; storage_class = "COLDLINE" }
+    condition {
+      age = 365
+    }
+    action {
+      type          = "SetStorageClass"
+      storage_class = "COLDLINE"
+    }
   }
 
   labels = local.common_labels
@@ -186,9 +197,24 @@ resource "google_composer_environment" "orchestrator" {
     }
 
     workloads_config {
-      scheduler { cpu = 1; memory_gb = 2; storage_gb = 5; count = 1 }
-      web_server { cpu = 0.5; memory_gb = 2; storage_gb = 5 }
-      worker { cpu = 2; memory_gb = 8; storage_gb = 50; min_count = 2; max_count = 8 }
+      scheduler {
+        cpu        = 1
+        memory_gb  = 2
+        storage_gb = 5
+        count      = 1
+      }
+      web_server {
+        cpu        = 0.5
+        memory_gb  = 2
+        storage_gb = 5
+      }
+      worker {
+        cpu        = 2
+        memory_gb  = 8
+        storage_gb = 50
+        min_count  = 2
+        max_count  = 8
+      }
     }
 
     environment_size = "ENVIRONMENT_SIZE_SMALL"

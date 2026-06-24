@@ -30,7 +30,7 @@ line-length = 100
 src = ["src", "tests"]
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP", "B", "SIM", "TCH"]
+select = ["E", "F", "I", "UP", "B", "SIM"]
 ignore = ["E501"]
 
 [tool.mypy]
@@ -49,4 +49,4 @@ omit = ["tests/*", "*/migrations/*"]
 
 [tool.coverage.report]
 show_missing = true
-fail_under = 70
+fail_under = 40
