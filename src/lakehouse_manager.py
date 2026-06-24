@@ -5,12 +5,12 @@ Trino federation, and CDC via Debezium + Kafka.
 """
 
 from __future__ import annotations
+
 import json
 import logging
 import time
 from dataclasses import dataclass, field
-from enum import Enum
-from pathlib import Path
+from enum import StrEnum
 from typing import Any
 
 from google.cloud import bigquery, storage
@@ -18,13 +18,13 @@ from google.cloud import bigquery, storage
 logger = logging.getLogger(__name__)
 
 
-class MedallionLayer(str, Enum):
+class MedallionLayer(StrEnum):
     BRONZE = "bronze"
     SILVER = "silver"
     GOLD = "gold"
 
 
-class TableFormat(str, Enum):
+class TableFormat(StrEnum):
     DELTA = "delta"
     ICEBERG = "iceberg"
     PARQUET = "parquet"
@@ -188,7 +188,6 @@ class MedallionPipelineOrchestrator:
         schema: list[dict],
     ) -> None:
         """Register an Iceberg table in BigQuery as external table."""
-        col_defs = ", ".join(f"{c['name']} {c['type']}" for c in schema)
         sql = f"""
             CREATE OR REPLACE EXTERNAL TABLE
               `{self.config.project_id}.{self.config.bq_dataset}.{table_name}`

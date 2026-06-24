@@ -43,6 +43,7 @@ class TestAPIIngester:
         last_page = [{"id": i} for i in range(3)]
 
         call_count = [0]
+
         def fake_fetch(params):
             call_count[0] += 1
             return {"results": full_page if call_count[0] == 1 else last_page}
@@ -71,8 +72,8 @@ class TestAPIIngester:
             endpoint="/v1/data",
             auth_header="Bearer my-token",
         )
-        ingester = APIIngester(config)
-        assert ingester._session.headers.get("Authorization") == "Bearer my-token"
+        ing = APIIngester(config)
+        assert ing._session.headers.get("Authorization") == "Bearer my-token"
 
 
 class TestKafkaConfig:

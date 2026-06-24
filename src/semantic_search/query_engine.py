@@ -106,7 +106,7 @@ class NLQueryEngine:
         cursor = self.trino.cursor()
         cursor.execute(sql)
         columns = [d[0] for d in cursor.description]
-        return [dict(zip(columns, row)) for row in cursor.fetchmany(100)]
+        return [dict(zip(columns, row, strict=False)) for row in cursor.fetchmany(100)]
 
     async def _explain(
         self, question: str, sql: str, rows: list[dict[str, Any]]

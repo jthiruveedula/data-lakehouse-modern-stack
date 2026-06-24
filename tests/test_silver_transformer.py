@@ -53,3 +53,12 @@ class TestSilverTransformer:
             result = transformer.transform(mock_df, config)
 
         assert result.duplicates_dropped == 25  # 100 in - 75 deduped
+
+    def test_rows_out_matches_deduped(self, transformer, mock_df, config):
+        deduped_df = MagicMock()
+        deduped_df.count.return_value = 90
+        with patch.object(transformer, "_deduplicate", return_value=deduped_df), \
+             patch.object(transformer, "_overwrite_silver"):
+            result = transformer.transform(mock_df, config)
+
+        assert result.rows_out == 90
