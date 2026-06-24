@@ -1,0 +1,1665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Data Lakehouse Modern Stack — Production-Grade Open Data Platform</title>
+  <meta name="description" content="A production-grade open data lakehouse built on Delta Lake + Apache Iceberg with medallion architecture, dbt transformations, Trino query federation, and GenAI semantic search on GCP." />
+  <style>
+    :root {
+      --bg-deep: #050a14;
+      --bg-dark: #0a1628;
+      --bg-card: rgba(15, 23, 42, 0.85);
+      --bg-glass: rgba(255, 255, 255, 0.04);
+      --teal: #00d4ff;
+      --teal-dim: #0099bb;
+      --purple: #7c3aed;
+      --purple-light: #a78bfa;
+      --amber: #f59e0b;
+      --green: #10b981;
+      --red: #ef4444;
+      --text-primary: #e2e8f0;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --border: rgba(255,255,255,0.08);
+      --border-glow: rgba(0, 212, 255, 0.3);
+      --radius: 12px;
+      --radius-lg: 20px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg-deep);
+      color: var(--text-primary);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* ── SCROLLBAR ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg-deep); }
+    ::-webkit-scrollbar-thumb { background: var(--teal-dim); border-radius: 3px; }
+
+    /* ── CANVAS BACKGROUND ── */
+    #hero-canvas {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      padding: 0 2rem;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(5, 10, 20, 0.9);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      transition: all 0.3s;
+    }
+    nav.scrolled { box-shadow: 0 4px 32px rgba(0,0,0,0.4); }
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 1.1rem;
+      text-decoration: none;
+      color: var(--text-primary);
+    }
+    .nav-logo .logo-icon {
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, var(--teal), var(--purple));
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem;
+    }
+    .nav-links {
+      display: flex;
+      gap: 2rem;
+      list-style: none;
+    }
+    .nav-links a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--teal); }
+    .nav-cta {
+      background: linear-gradient(135deg, var(--teal), var(--purple));
+      color: #fff !important;
+      padding: 8px 18px;
+      border-radius: 8px;
+      font-weight: 600;
+    }
+    .nav-cta:hover { opacity: 0.9; color: #fff !important; }
+    .hamburger { display: none; cursor: pointer; flex-direction: column; gap: 5px; }
+    .hamburger span { width: 24px; height: 2px; background: var(--text-secondary); border-radius: 2px; transition: 0.3s; }
+
+    /* ── HERO ── */
+    #hero {
+      position: relative;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 6rem 2rem 4rem;
+      overflow: hidden;
+    }
+    .hero-bg-glow {
+      position: absolute;
+      width: 600px; height: 600px;
+      border-radius: 50%;
+      filter: blur(120px);
+      opacity: 0.15;
+      pointer-events: none;
+    }
+    .hero-bg-glow.teal { background: var(--teal); top: -100px; left: -100px; }
+    .hero-bg-glow.purple { background: var(--purple); bottom: -100px; right: -100px; }
+    .hero-content { position: relative; z-index: 1; max-width: 900px; }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(0, 212, 255, 0.1);
+      border: 1px solid rgba(0, 212, 255, 0.3);
+      color: var(--teal);
+      padding: 6px 16px;
+      border-radius: 50px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 1.5rem;
+      animation: fadeInDown 0.8s ease forwards;
+    }
+    .hero-badge::before {
+      content: '';
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--teal);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.4); }
+    }
+    h1 {
+      font-size: clamp(2.5rem, 6vw, 5rem);
+      font-weight: 800;
+      line-height: 1.1;
+      margin-bottom: 1.5rem;
+      animation: fadeInUp 0.8s 0.2s ease both;
+    }
+    h1 .gradient-text {
+      background: linear-gradient(135deg, var(--teal) 0%, var(--purple-light) 50%, var(--amber) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero-subtitle {
+      font-size: clamp(1rem, 2vw, 1.25rem);
+      color: var(--text-secondary);
+      max-width: 680px;
+      margin: 0 auto 2.5rem;
+      animation: fadeInUp 0.8s 0.4s ease both;
+    }
+    .hero-actions {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 4rem;
+      animation: fadeInUp 0.8s 0.6s ease both;
+    }
+    .btn {
+      padding: 14px 28px;
+      border-radius: var(--radius);
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.3s;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: none;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--teal), var(--purple));
+      color: white;
+      box-shadow: 0 4px 20px rgba(0, 212, 255, 0.3);
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0, 212, 255, 0.4); }
+    .btn-outline {
+      background: transparent;
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(10px);
+    }
+    .btn-outline:hover { border-color: var(--teal); color: var(--teal); transform: translateY(-2px); }
+    .hero-stats {
+      display: flex;
+      justify-content: center;
+      gap: 3rem;
+      flex-wrap: wrap;
+      animation: fadeInUp 0.8s 0.8s ease both;
+    }
+    .stat-item { text-align: center; }
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--teal), var(--purple-light));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .stat-label { font-size: 0.85rem; color: var(--text-muted); }
+
+    /* ── SECTIONS ── */
+    section { padding: 6rem 2rem; }
+    .section-inner { max-width: 1200px; margin: 0 auto; }
+    .section-tag {
+      display: inline-block;
+      color: var(--teal);
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 0.75rem;
+    }
+    .section-title {
+      font-size: clamp(1.8rem, 4vw, 2.8rem);
+      font-weight: 800;
+      margin-bottom: 1rem;
+    }
+    .section-desc {
+      color: var(--text-secondary);
+      font-size: 1.1rem;
+      max-width: 600px;
+    }
+    .section-header { margin-bottom: 3.5rem; }
+
+    /* ── ARCHITECTURE ── */
+    #architecture { background: linear-gradient(180deg, var(--bg-deep) 0%, var(--bg-dark) 100%); }
+    .arch-diagram {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 3rem;
+      overflow-x: auto;
+    }
+    .arch-flow {
+      display: flex;
+      align-items: stretch;
+      gap: 0;
+      min-width: 800px;
+    }
+    .arch-layer {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+    .arch-layer:not(:last-child)::after {
+      content: '→';
+      position: absolute;
+      right: -18px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 1.5rem;
+      color: var(--teal);
+      z-index: 2;
+    }
+    .arch-card {
+      width: 100%;
+      padding: 1.5rem 1rem;
+      border-radius: var(--radius);
+      text-align: center;
+      border: 1px solid var(--border);
+      transition: all 0.3s;
+      cursor: default;
+    }
+    .arch-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    }
+    .arch-card.source { background: rgba(15,23,42,0.8); border-color: rgba(100,116,139,0.4); }
+    .arch-card.bronze { background: rgba(180, 83, 9, 0.15); border-color: rgba(245, 158, 11, 0.4); }
+    .arch-card.silver { background: rgba(71, 85, 105, 0.2); border-color: rgba(148, 163, 184, 0.4); }
+    .arch-card.gold { background: rgba(161, 98, 7, 0.15); border-color: rgba(250, 204, 21, 0.4); }
+    .arch-card.trino { background: rgba(0, 212, 255, 0.1); border-color: rgba(0, 212, 255, 0.4); }
+    .arch-card.ai { background: rgba(124, 58, 237, 0.15); border-color: rgba(124, 58, 237, 0.4); }
+    .arch-icon { font-size: 2rem; margin-bottom: 0.75rem; display: block; }
+    .arch-name { font-size: 0.9rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .arch-tech { font-size: 0.7rem; color: var(--text-muted); line-height: 1.8; }
+    .arch-details {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+    .detail-card {
+      background: var(--bg-glass);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+    }
+    .detail-card h4 { font-size: 0.85rem; color: var(--teal); margin-bottom: 0.5rem; font-weight: 600; }
+    .detail-card ul { list-style: none; }
+    .detail-card li { font-size: 0.8rem; color: var(--text-secondary); padding: 2px 0; }
+    .detail-card li::before { content: '▸ '; color: var(--teal); }
+
+    /* ── FEATURES ── */
+    #features { background: var(--bg-dark); }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 1.5rem;
+    }
+    .feature-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 2rem;
+      transition: all 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 3px;
+      background: linear-gradient(90deg, var(--teal), var(--purple));
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.3s;
+    }
+    .feature-card:hover::before { transform: scaleX(1); }
+    .feature-card:hover { transform: translateY(-4px); border-color: var(--border-glow); box-shadow: 0 12px 40px rgba(0, 212, 255, 0.1); }
+    .feature-icon {
+      width: 52px; height: 52px;
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem;
+      margin-bottom: 1.25rem;
+    }
+    .feature-icon.teal { background: rgba(0, 212, 255, 0.1); }
+    .feature-icon.purple { background: rgba(124, 58, 237, 0.1); }
+    .feature-icon.amber { background: rgba(245, 158, 11, 0.1); }
+    .feature-icon.green { background: rgba(16, 185, 129, 0.1); }
+    .feature-card h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.75rem; }
+    .feature-card p { font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1rem; line-height: 1.7; }
+    .feature-tags { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    .tag {
+      font-size: 0.7rem;
+      padding: 3px 10px;
+      border-radius: 50px;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+    }
+    .tag.teal { background: rgba(0, 212, 255, 0.1); color: var(--teal); border: 1px solid rgba(0, 212, 255, 0.2); }
+    .tag.purple { background: rgba(124, 58, 237, 0.1); color: var(--purple-light); border: 1px solid rgba(124, 58, 237, 0.2); }
+    .tag.amber { background: rgba(245, 158, 11, 0.1); color: var(--amber); border: 1px solid rgba(245, 158, 11, 0.2); }
+    .tag.green { background: rgba(16, 185, 129, 0.1); color: var(--green); border: 1px solid rgba(16, 185, 129, 0.2); }
+
+    /* ── TECH STACK ── */
+    #tech-stack { background: var(--bg-deep); }
+    .stack-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 1rem;
+    }
+    .stack-item {
+      background: var(--bg-glass);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem 1rem;
+      text-align: center;
+      transition: all 0.3s;
+    }
+    .stack-item:hover {
+      border-color: var(--border-glow);
+      background: rgba(0, 212, 255, 0.05);
+      transform: translateY(-3px);
+    }
+    .stack-logo { font-size: 2rem; margin-bottom: 0.5rem; display: block; }
+    .stack-name { font-size: 0.85rem; font-weight: 700; margin-bottom: 0.25rem; }
+    .stack-role { font-size: 0.7rem; color: var(--text-muted); }
+
+    /* ── CODE EXAMPLES ── */
+    #code-examples { background: var(--bg-dark); }
+    .code-tabs {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-bottom: 1.5rem;
+    }
+    .code-tab {
+      padding: 8px 18px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-secondary);
+      transition: all 0.2s;
+    }
+    .code-tab.active, .code-tab:hover {
+      background: rgba(0, 212, 255, 0.1);
+      border-color: var(--teal);
+      color: var(--teal);
+    }
+    .code-pane { display: none; }
+    .code-pane.active { display: block; }
+    .code-block {
+      background: #0d1117;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+    .code-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.875rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,0.02);
+    }
+    .code-header .file-name { font-size: 0.8rem; color: var(--text-secondary); font-family: monospace; }
+    .code-dots { display: flex; gap: 6px; }
+    .code-dot { width: 12px; height: 12px; border-radius: 50%; }
+    .code-dot.red { background: #ff5f57; }
+    .code-dot.yellow { background: #febc2e; }
+    .code-dot.green { background: #28c840; }
+    pre {
+      padding: 1.5rem;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      line-height: 1.8;
+      font-family: 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+      tab-size: 2;
+    }
+    .kw { color: #ff7b72; }
+    .fn { color: #d2a8ff; }
+    .str { color: #a5d6ff; }
+    .num { color: #79c0ff; }
+    .cm { color: #8b949e; font-style: italic; }
+    .cls { color: #ffa657; }
+    .dec { color: #e3b341; }
+    .op { color: #ff7b72; }
+
+    /* ── COMPARISON TABLE ── */
+    #comparison { background: var(--bg-deep); }
+    .table-wrap { overflow-x: auto; border-radius: var(--radius-lg); border: 1px solid var(--border); }
+    table { width: 100%; border-collapse: collapse; }
+    thead { background: rgba(0, 212, 255, 0.05); }
+    th {
+      padding: 1rem 1.25rem;
+      text-align: left;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--teal);
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    td {
+      padding: 0.875rem 1.25rem;
+      font-size: 0.875rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-secondary);
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+    .check { color: var(--green); font-weight: 700; }
+    .cross { color: var(--red); }
+    .partial { color: var(--amber); }
+    td:first-child { color: var(--text-primary); font-weight: 600; }
+
+    /* ── GETTING STARTED ── */
+    #getting-started { background: var(--bg-dark); }
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+    }
+    .step-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 2rem;
+      position: relative;
+    }
+    .step-num {
+      position: absolute;
+      top: -16px; left: 1.5rem;
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, var(--teal), var(--purple));
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.85rem;
+      font-weight: 800;
+    }
+    .step-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.75rem; margin-top: 0.5rem; }
+    .step-card p { font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 1rem; }
+    .inline-code {
+      background: rgba(0,212,255,0.08);
+      border: 1px solid rgba(0,212,255,0.2);
+      border-radius: 6px;
+      padding: 0.75rem 1rem;
+      font-family: monospace;
+      font-size: 0.8rem;
+      color: var(--teal);
+      word-break: break-all;
+    }
+
+    /* ── PIPELINE FLOW ── */
+    #pipeline { background: var(--bg-deep); }
+    .pipeline-track {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      position: relative;
+      padding-left: 3rem;
+    }
+    .pipeline-track::before {
+      content: '';
+      position: absolute;
+      left: 12px;
+      top: 24px; bottom: 24px;
+      width: 2px;
+      background: linear-gradient(180deg, var(--teal), var(--purple), var(--amber));
+    }
+    .pipeline-step {
+      position: relative;
+      padding: 1.5rem 0 1.5rem 2rem;
+    }
+    .pipeline-dot {
+      position: absolute;
+      left: -44px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      border: 2px solid var(--teal);
+      background: var(--bg-deep);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem;
+    }
+    .pipeline-content {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+      transition: all 0.3s;
+    }
+    .pipeline-content:hover { border-color: var(--border-glow); }
+    .pipeline-content h4 { font-size: 1rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .pipeline-content p { font-size: 0.875rem; color: var(--text-secondary); }
+    .pipeline-meta { display: flex; gap: 0.75rem; margin-top: 0.75rem; flex-wrap: wrap; }
+    .meta-badge {
+      font-size: 0.7rem;
+      padding: 2px 10px;
+      border-radius: 50px;
+      background: rgba(0,212,255,0.1);
+      color: var(--teal);
+      border: 1px solid rgba(0,212,255,0.2);
+      font-weight: 600;
+    }
+
+    /* ── CTA SECTION ── */
+    #cta {
+      background: linear-gradient(135deg, rgba(0,212,255,0.05) 0%, rgba(124,58,237,0.05) 100%);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      text-align: center;
+    }
+    .cta-box { max-width: 700px; margin: 0 auto; }
+    .cta-box h2 { font-size: clamp(1.8rem, 4vw, 2.5rem); font-weight: 800; margin-bottom: 1rem; }
+    .cta-box p { color: var(--text-secondary); font-size: 1.1rem; margin-bottom: 2rem; }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--bg-dark);
+      border-top: 1px solid var(--border);
+      padding: 3rem 2rem 2rem;
+    }
+    .footer-inner { max-width: 1200px; margin: 0 auto; }
+    .footer-top {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 3rem;
+      margin-bottom: 2.5rem;
+    }
+    .footer-brand p { font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.75rem; margin-bottom: 1rem; line-height: 1.7; }
+    .footer-col h4 { font-size: 0.85rem; font-weight: 700; color: var(--text-primary); margin-bottom: 1rem; }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: 0.5rem; }
+    .footer-col a { color: var(--text-secondary); text-decoration: none; font-size: 0.875rem; transition: color 0.2s; }
+    .footer-col a:hover { color: var(--teal); }
+    .footer-bottom {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .badges { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: var(--bg-glass);
+      border: 1px solid var(--border);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+    .badge.green { border-color: rgba(16,185,129,0.3); color: var(--green); }
+    .badge.blue { border-color: rgba(0,212,255,0.3); color: var(--teal); }
+    .badge.purple { border-color: rgba(124,58,237,0.3); color: var(--purple-light); }
+
+    /* ── ANIMATIONS ── */
+    @keyframes fadeInDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .reveal {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .reveal-delay-1 { transition-delay: 0.1s; }
+    .reveal-delay-2 { transition-delay: 0.2s; }
+    .reveal-delay-3 { transition-delay: 0.3s; }
+    .reveal-delay-4 { transition-delay: 0.4s; }
+
+    /* ── DIVIDER ── */
+    .divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border), transparent);
+      margin: 0;
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .hamburger { display: flex; }
+      .nav-links.open {
+        display: flex;
+        flex-direction: column;
+        position: fixed;
+        top: 64px; left: 0; right: 0;
+        background: rgba(5,10,20,0.97);
+        padding: 1.5rem 2rem;
+        border-bottom: 1px solid var(--border);
+        gap: 1.25rem;
+        backdrop-filter: blur(20px);
+      }
+      .footer-top { grid-template-columns: 1fr 1fr; gap: 2rem; }
+      .arch-flow { flex-direction: column; }
+      .arch-layer::after { display: none; }
+      .hero-stats { gap: 1.5rem; }
+    }
+    @media (max-width: 480px) {
+      .footer-top { grid-template-columns: 1fr; }
+      .hero-actions { flex-direction: column; align-items: center; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ──────────── NAV ──────────── -->
+<nav id="navbar">
+  <a href="#" class="nav-logo">
+    <span class="logo-icon">⬡</span>
+    <span>DataLakehouse</span>
+  </a>
+  <ul class="nav-links" id="nav-links">
+    <li><a href="#architecture">Architecture</a></li>
+    <li><a href="#features">Features</a></li>
+    <li><a href="#tech-stack">Stack</a></li>
+    <li><a href="#code-examples">Code</a></li>
+    <li><a href="#comparison">Compare</a></li>
+    <li><a href="https://github.com/jthiruveedula/data-lakehouse-modern-stack" class="nav-cta">GitHub →</a></li>
+  </ul>
+  <div class="hamburger" id="hamburger" onclick="toggleMenu()">
+    <span></span><span></span><span></span>
+  </div>
+</nav>
+
+<!-- ──────────── HERO ──────────── -->
+<section id="hero">
+  <canvas id="hero-canvas"></canvas>
+  <div class="hero-bg-glow teal"></div>
+  <div class="hero-bg-glow purple"></div>
+  <div class="hero-content">
+    <div class="hero-badge">Production-Grade Open Data Platform</div>
+    <h1>
+      Modern<br/>
+      <span class="gradient-text">Data Lakehouse</span><br/>
+      Architecture
+    </h1>
+    <p class="hero-subtitle">
+      Delta Lake + Apache Iceberg · Medallion Architecture · dbt Transformations ·
+      Trino Query Federation · GenAI Semantic Search on GCP
+    </p>
+    <div class="hero-actions">
+      <a href="https://github.com/jthiruveedula/data-lakehouse-modern-stack" class="btn btn-primary">
+        ⭐ Star on GitHub
+      </a>
+      <a href="#architecture" class="btn btn-outline">
+        Explore Architecture ↓
+      </a>
+    </div>
+    <div class="hero-stats">
+      <div class="stat-item">
+        <div class="stat-value">3</div>
+        <div class="stat-label">Medallion Layers</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">2</div>
+        <div class="stat-label">Table Formats</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">∞</div>
+        <div class="stat-label">Time Travel</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">ACID</div>
+        <div class="stat-label">Transactions</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value">GenAI</div>
+        <div class="stat-label">Semantic Search</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ──────────── ARCHITECTURE ──────────── -->
+<section id="architecture">
+  <div class="section-inner">
+    <div class="section-header reveal">
+      <span class="section-tag">System Design</span>
+      <h2 class="section-title">Medallion Architecture</h2>
+      <p class="section-desc">
+        A layered data quality framework that progressively refines raw data
+        into trusted, analytics-ready assets through Bronze, Silver, and Gold layers.
+      </p>
+    </div>
+    <div class="arch-diagram reveal">
+      <div class="arch-flow">
+        <div class="arch-layer">
+          <div class="arch-card source">
+            <span class="arch-icon">🌐</span>
+            <div class="arch-name">Raw Sources</div>
+            <div class="arch-tech">Kafka Streams<br/>REST APIs<br/>Debezium CDC<br/>Batch Files</div>
+          </div>
+        </div>
+        <div class="arch-layer">
+          <div class="arch-card bronze">
+            <span class="arch-icon">🥉</span>
+            <div class="arch-name">Bronze Layer</div>
+            <div class="arch-tech">Raw Ingestion<br/>Full Fidelity<br/>Append-Only<br/>Delta / Iceberg</div>
+          </div>
+        </div>
+        <div class="arch-layer">
+          <div class="arch-card silver">
+            <span class="arch-icon">🥈</span>
+            <div class="arch-name">Silver Layer</div>
+            <div class="arch-tech">dbt + PySpark<br/>Deduplication<br/>SCD Type 2<br/>Quality Gates</div>
+          </div>
+        </div>
+        <div class="arch-layer">
+          <div class="arch-card gold">
+            <span class="arch-icon">🥇</span>
+            <div class="arch-name">Gold Layer</div>
+            <div class="arch-tech">Star Schema<br/>Aggregations<br/>Materialized Views<br/>BigQuery</div>
+          </div>
+        </div>
+        <div class="arch-layer">
+          <div class="arch-card trino">
+            <span class="arch-icon">⚡</span>
+            <div class="arch-name">Query Layer</div>
+            <div class="arch-tech">Trino 430<br/>Federation<br/>GCS + BQ + PG<br/>Sub-second SQL</div>
+          </div>
+        </div>
+        <div class="arch-layer">
+          <div class="arch-card ai">
+            <span class="arch-icon">🤖</span>
+            <div class="arch-name">AI Layer</div>
+            <div class="arch-tech">LangChain RAG<br/>Vertex AI<br/>Semantic Search<br/>NL Queries</div>
+          </div>
+        </div>
+      </div>
+      <div class="arch-details">
+        <div class="detail-card">
+          <h4>Bronze Guarantees</h4>
+          <ul>
+            <li>Append-only, never mutated</li>
+            <li>Full source fidelity preserved</li>
+            <li>Automatic ingestion timestamps</li>
+            <li>Batch ID tracking</li>
+            <li>Partition by ingest date</li>
+          </ul>
+        </div>
+        <div class="detail-card">
+          <h4>Silver Transformations</h4>
+          <ul>
+            <li>dbt models with tests</li>
+            <li>Deduplication via ROW_NUMBER</li>
+            <li>SCD Type 2 MERGE logic</li>
+            <li>Schema evolution support</li>
+            <li>Great Expectations gates</li>
+          </ul>
+        </div>
+        <div class="detail-card">
+          <h4>Gold Delivery</h4>
+          <ul>
+            <li>Star schema aggregations</li>
+            <li>Pre-computed KPIs</li>
+            <li>BigQuery native tables</li>
+            <li>Materialized views</li>
+            <li>BI-tool optimized</li>
+          </ul>
+        </div>
+        <div class="detail-card">
+          <h4>Federation (Trino)</h4>
+          <ul>
+            <li>Cross-source SQL queries</li>
+            <li>GCS, BigQuery, PostgreSQL</li>
+            <li>Delta Lake catalog</li>
+            <li>Iceberg catalog</li>
+            <li>Sub-second response</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ──────────── PIPELINE ──────────── -->
+<section id="pipeline">
+  <div class="section-inner">
+    <div class="section-header reveal">
+      <span class="section-tag">Data Flow</span>
+      <h2 class="section-title">End-to-End Pipeline</h2>
+      <p class="section-desc">
+        Follow a record from raw ingestion through transformations, quality validation, and into production analytics.
+      </p>
+    </div>
+    <div class="pipeline-track reveal">
+      <div class="pipeline-step">
+        <div class="pipeline-dot">1</div>
+        <div class="pipeline-content">
+          <h4>Event Ingestion</h4>
+          <p>Real-time events stream via Kafka or Debezium CDC, batch files land on GCS, APIs are polled on schedule. The ingestion layer normalizes all sources into a unified Bronze write path.</p>
+          <div class="pipeline-meta">
+            <span class="meta-badge">Kafka</span>
+            <span class="meta-badge">Debezium</span>
+            <span class="meta-badge">Cloud Storage</span>
+            <span class="meta-badge">REST APIs</span>
+          </div>
+        </div>
+      </div>
+      <div class="pipeline-step">
+        <div class="pipeline-dot">2</div>
+        <div class="pipeline-content">
+          <h4>Bronze Landing</h4>
+          <p>Raw records land in Delta Lake or Iceberg tables with full fidelity. Every row is enriched with _ingestion_ts, _source, and _batch_id metadata. Tables are append-only — no updates, no deletes.</p>
+          <div class="pipeline-meta">
+            <span class="meta-badge">Delta Lake 3.x</span>
+            <span class="meta-badge">Apache Iceberg 1.5</span>
+            <span class="meta-badge">ACID</span>
+          </div>
+        </div>
+      </div>
+      <div class="pipeline-step">
+        <div class="pipeline-dot">3</div>
+        <div class="pipeline-content">
+          <h4>Silver Transformation</h4>
+          <p>dbt models deduplicate records using ROW_NUMBER window functions over primary keys. SCD Type 2 MERGE statements track historical changes with valid_from / valid_to / is_current flags. Row hashing detects real changes vs. phantom updates.</p>
+          <div class="pipeline-meta">
+            <span class="meta-badge">dbt-spark</span>
+            <span class="meta-badge">PySpark 3.5</span>
+            <span class="meta-badge">SCD Type 2</span>
+            <span class="meta-badge">SHA-256 hash</span>
+          </div>
+        </div>
+      </div>
+      <div class="pipeline-step">
+        <div class="pipeline-dot">4</div>
+        <div class="pipeline-content">
+          <h4>Quality Gates</h4>
+          <p>Great Expectations suites validate row counts, null rates, referential integrity, and statistical distributions. Failed expectations block the pipeline and page the on-call engineer. Passing suites emit quality scores to DataPlex.</p>
+          <div class="pipeline-meta">
+            <span class="meta-badge">Great Expectations</span>
+            <span class="meta-badge">GCP DataPlex</span>
+            <span class="meta-badge">Alerting</span>
+          </div>
+        </div>
+      </div>
+      <div class="pipeline-step">
+        <div class="pipeline-dot">5</div>
+        <div class="pipeline-content">
+          <h4>Gold Aggregation</h4>
+          <p>Validated Silver data feeds star-schema Gold tables in BigQuery. Pre-computed aggregates, KPI materialized views, and partition-pruned query patterns deliver sub-second BI responses. Looker, Tableau, and Superset connect directly.</p>
+          <div class="pipeline-meta">
+            <span class="meta-badge">BigQuery</span>
+            <span class="meta-badge">Star Schema</span>
+            <span class="meta-badge">Materialized Views</span>
+          </div>
+        </div>
+      </div>
+      <div class="pipeline-step">
+        <div class="pipeline-dot">6</div>
+        <div class="pipeline-content">
+          <h4>GenAI Semantic Layer</h4>
+          <p>Vertex AI embeddings index all Gold table metadata, column descriptions, and sample values. LangChain RAG translates natural-language queries into SQL, executes via Trino, and explains results in plain English via a FastAPI endpoint.</p>
+          <div class="pipeline-meta">
+            <span class="meta-badge">Vertex AI</span>
+            <span class="meta-badge">LangChain</span>
+            <span class="meta-badge">Trino</span>
+            <span class="meta-badge">FastAPI</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ──────────── FEATURES ──────────── -->
+<section id="features">
+  <div class="section-inner">
+    <div class="section-header reveal">
+      <span class="section-tag">Capabilities</span>
+      <h2 class="section-title">Production-Grade Features</h2>
+      <p class="section-desc">
+        Every component is designed for real-world scale, reliability, and cost-efficiency.
+      </p>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card reveal reveal-delay-1">
+        <div class="feature-icon teal">⚡</div>
+        <h3>ACID Transactions</h3>
+        <p>Full serializable isolation across all medallion layers. Concurrent writers never corrupt data — Delta Lake's optimistic concurrency and Iceberg's snapshot isolation handle it automatically.</p>
+        <div class="feature-tags">
+          <span class="tag teal">Delta Lake</span>
+          <span class="tag teal">Iceberg</span>
+          <span class="tag teal">Serializable</span>
+        </div>
+      </div>
+      <div class="feature-card reveal reveal-delay-2">
+        <div class="feature-icon purple">⏱</div>
+        <h3>Time Travel Queries</h3>
+        <p>Query any table as of any past timestamp or version number. Invaluable for auditing, debugging, ML feature backfill, and recovering from bad writes. Zero additional storage overhead.</p>
+        <div class="feature-tags">
+          <span class="tag purple">VERSION AS OF</span>
+          <span class="tag purple">TIMESTAMP AS OF</span>
+          <span class="tag purple">Audit Log</span>
+        </div>
+      </div>
+      <div class="feature-card reveal reveal-delay-3">
+        <div class="feature-icon amber">🔄</div>
+        <h3>Schema Evolution</h3>
+        <p>Add, rename, or reorder columns without rewriting historical data or breaking existing readers. Delta Lake and Iceberg both support backward-compatible schema changes with full metadata tracking.</p>
+        <div class="feature-tags">
+          <span class="tag amber">ADD COLUMN</span>
+          <span class="tag amber">RENAME</span>
+          <span class="tag amber">Type Widening</span>
+        </div>
+      </div>
+      <div class="feature-card reveal reveal-delay-4">
+        <div class="feature-icon green">🧬</div>
+        <h3>SCD Type 2</h3>
+        <p>Track slowly changing dimensions with full history. The orchestrator generates MERGE statements that insert new records and close old ones using valid_from / valid_to / is_current patterns.</p>
+        <div class="feature-tags">
+          <span class="tag green">MERGE</span>
+          <span class="tag green">valid_from/to</span>
+          <span class="tag green">is_current</span>
+        </div>
+      </div>
+      <div class="feature-card reveal reveal-delay-1">
+        <div class="feature-icon teal">🔗</div>
+        <h3>Query Federation</h3>
+        <p>Trino 430 on GKE federates queries across GCS Delta/Iceberg tables, BigQuery, and PostgreSQL in a single SQL statement. No ETL required — join across systems at query time.</p>
+        <div class="feature-tags">
+          <span class="tag teal">Trino 430</span>
+          <span class="tag teal">GKE</span>
+          <span class="tag teal">Cross-source JOIN</span>
+        </div>
+      </div>
+      <div class="feature-card reveal reveal-delay-2">
+        <div class="feature-icon purple">🤖</div>
+        <h3>GenAI Semantic Search</h3>
+        <p>Ask data questions in plain English. Vertex AI embeddings index table metadata; LangChain RAG translates natural language to SQL, executes via Trino, and returns human-readable answers.</p>
+        <div class="feature-tags">
+          <span class="tag purple">Vertex AI</span>
+          <span class="tag purple">LangChain</span>
+          <span class="tag purple">RAG</span>
+        </div>
+      </div>
+      <div class="feature-card reveal reveal-delay-3">
+        <div class="feature-icon amber">🏗</div>
+        <h3>Infrastructure as Code</h3>
+        <p>Full Terraform modules provision Dataproc clusters, GKE for Trino, GCS buckets with lifecycle policies, IAM bindings, and Cloud Composer DAGs. Reproducible across dev/staging/prod.</p>
+        <div class="feature-tags">
+          <span class="tag amber">Terraform</span>
+          <span class="tag amber">GCP</span>
+          <span class="tag amber">GitOps</span>
+        </div>
+      </div>
+      <div class="feature-card reveal reveal-delay-4">
+        <div class="feature-icon green">📊</div>
+        <h3>Data Catalog</h3>
+        <p>GCP DataPlex automatically catalogs all tables, tracks data lineage end-to-end from source to Gold, enforces column-level security, and surfaces data quality scores in a unified UI.</p>
+        <div class="feature-tags">
+          <span class="tag green">DataPlex</span>
+          <span class="tag green">Lineage</span>
+          <span class="tag green">Column Security</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ──────────── CODE EXAMPLES ──────────── -->
+<section id="code-examples">
+  <div class="section-inner">
+    <div class="section-header reveal">
+      <span class="section-tag">Developer Experience</span>
+      <h2 class="section-title">Code Examples</h2>
+      <p class="section-desc">Real code from the production implementation.</p>
+    </div>
+    <div class="reveal">
+      <div class="code-tabs">
+        <button class="code-tab active" onclick="showTab('tab-bronze')">Bronze Ingestion</button>
+        <button class="code-tab" onclick="showTab('tab-silver')">Silver SCD2</button>
+        <button class="code-tab" onclick="showTab('tab-gold')">Gold Aggregation</button>
+        <button class="code-tab" onclick="showTab('tab-search')">Semantic Search</button>
+        <button class="code-tab" onclick="showTab('tab-dbt')">dbt Model</button>
+        <button class="code-tab" onclick="showTab('tab-trino')">Trino Federation</button>
+      </div>
+
+      <div id="tab-bronze" class="code-pane active">
+        <div class="code-block">
+          <div class="code-header">
+            <div class="code-dots"><span class="code-dot red"></span><span class="code-dot yellow"></span><span class="code-dot green"></span></div>
+            <span class="file-name">src/lakehouse_manager.py</span>
+          </div>
+          <pre><span class="cm"># Ingest raw events to Bronze — append-only, full fidelity</span>
+<span class="kw">async def</span> <span class="fn">ingest_to_bronze</span>(
+    <span class="cls">self</span>,
+    df: DataFrame,
+    table: LakehouseTable,
+    source_system: <span class="cls">str</span>,
+) -> <span class="cls">dict</span>:
+    enriched = df.withColumn(<span class="str">"_ingestion_ts"</span>, F.current_timestamp())
+                 .withColumn(<span class="str">"_source"</span>, F.lit(source_system))
+                 .withColumn(<span class="str">"_batch_id"</span>, F.lit(str(uuid4())))
+
+    gcs_path = <span class="str">f"gs://{self.config.gcs_bucket}/bronze/{table.name}"</span>
+
+    <span class="kw">if</span> table.table_format == TableFormat.DELTA:
+        enriched.write.format(<span class="str">"delta"</span>)              \
+            .mode(<span class="str">"append"</span>)                             \
+            .partitionBy(<span class="str">"_ingestion_date"</span>)             \
+            .save(gcs_path)
+
+    <span class="kw">elif</span> table.table_format == TableFormat.ICEBERG:
+        enriched.writeTo(<span class="str">f"iceberg.bronze.{table.name}"</span>) \
+            .using(<span class="str">"iceberg"</span>)                            \
+            .partitionedBy(<span class="str">"days(_ingestion_ts)"</span>)         \
+            .append()
+
+    <span class="kw">return</span> {
+        <span class="str">"rows_written"</span>: enriched.count(),
+        <span class="str">"gcs_path"</span>: gcs_path,
+        <span class="str">"format"</span>: table.table_format.value,
+    }</pre>
+        </div>
+      </div>
+
+      <div id="tab-silver" class="code-pane">
+        <div class="code-block">
+          <div class="code-header">
+            <div class="code-dots"><span class="code-dot red"></span><span class="code-dot yellow"></span><span class="code-dot green"></span></div>
+            <span class="file-name">src/silver/transformer.py</span>
+          </div>
+          <pre><span class="cm"># SCD Type 2 MERGE — track full change history</span>
+<span class="kw">def</span> <span class="fn">_build_scd2_merge</span>(<span class="cls">self</span>, table: LakehouseTable) -> <span class="cls">str</span>:
+    pk_join = <span class="str">" AND "</span>.join(
+        <span class="str">f"t.{k} = s.{k}"</span> <span class="kw">for</span> k <span class="kw">in</span> table.primary_keys
+    )
+    hash_cols = <span class="str">", "</span>.join(table.primary_keys)
+
+    <span class="kw">return</span> <span class="str">f"""
+MERGE INTO silver.{table.name} t
+USING (
+    SELECT *,
+           SHA2(CONCAT_WS('|', {hash_cols}), 256) AS _row_hash
+    FROM   bronze_{table.name}_deduped
+) s ON {pk_join}
+   AND t.is_current = TRUE
+
+WHEN MATCHED AND t._row_hash != s._row_hash THEN
+    UPDATE SET t.valid_to    = current_timestamp(),
+               t.is_current  = FALSE
+
+WHEN NOT MATCHED THEN
+    INSERT (*, valid_from, valid_to, is_current)
+    VALUES (s.*, current_timestamp(), NULL, TRUE)
+"""</span></pre>
+        </div>
+      </div>
+
+      <div id="tab-gold" class="code-pane">
+        <div class="code-block">
+          <div class="code-header">
+            <div class="code-dots"><span class="code-dot red"></span><span class="code-dot yellow"></span><span class="code-dot green"></span></div>
+            <span class="file-name">src/gold/aggregator.py</span>
+          </div>
+          <pre><span class="cm"># Build Gold aggregation table in BigQuery</span>
+<span class="kw">def</span> <span class="fn">build_gold_table</span>(
+    <span class="cls">self</span>,
+    spark: SparkSession,
+    source_query: <span class="cls">str</span>,
+    table: LakehouseTable,
+) -> <span class="cls">None</span>:
+    df = spark.sql(source_query)
+
+    <span class="cm"># Write to BigQuery with partition and cluster config</span>
+    df.write.format(<span class="str">"bigquery"</span>)          \
+        .option(<span class="str">"table"</span>, <span class="str">f"""{self.config.project}.
+                {self.config.bq_dataset}.
+                {table.name}"""</span>)           \
+        .option(<span class="str">"partitionField"</span>,
+                table.partition_cols[<span class="num">0</span>])   \
+        .option(<span class="str">"clusteredFields"</span>,
+                <span class="str">","</span>.join(table.cluster_cols)) \
+        .option(<span class="str">"createDisposition"</span>,
+                <span class="str">"CREATE_IF_NEEDED"</span>)         \
+        .mode(<span class="str">"overwrite"</span>)                 \
+        .save()
+
+    logger.info(<span class="str">f"Gold table {table.name} refreshed"</span>)</pre>
+        </div>
+      </div>
+
+      <div id="tab-search" class="code-pane">
+        <div class="code-block">
+          <div class="code-header">
+            <div class="code-dots"><span class="code-dot red"></span><span class="code-dot yellow"></span><span class="code-dot green"></span></div>
+            <span class="file-name">src/semantic_search/query_engine.py</span>
+          </div>
+          <pre><span class="cm"># Translate natural language → SQL → human-readable answer</span>
+<span class="kw">class</span> <span class="cls">NLQueryEngine</span>:
+    <span class="kw">def</span> <span class="fn">__init__</span>(<span class="cls">self</span>, trino_conn: TrinoConnection):
+        <span class="cls">self</span>.llm = VertexAI(model_name=<span class="str">"gemini-pro"</span>)
+        <span class="cls">self</span>.embeddings = VertexAIEmbeddings(
+            model_name=<span class="str">"textembedding-gecko@003"</span>
+        )
+        <span class="cls">self</span>.trino = trino_conn
+        <span class="cls">self</span>.vector_store = Chroma(
+            embedding_function=<span class="cls">self</span>.embeddings,
+            persist_directory=<span class="str">"/tmp/catalog_index"</span>,
+        )
+
+    <span class="kw">async def</span> <span class="fn">query</span>(<span class="cls">self</span>, question: <span class="cls">str</span>) -> <span class="cls">dict</span>:
+        <span class="cm"># 1. Retrieve relevant table schemas via semantic similarity</span>
+        docs = <span class="cls">self</span>.vector_store.similarity_search(question, k=<span class="num">5</span>)
+        context = <span class="str">"\n"</span>.join(d.page_content <span class="kw">for</span> d <span class="kw">in</span> docs)
+
+        <span class="cm"># 2. Generate SQL with chain-of-thought reasoning</span>
+        chain = LLMChain(llm=<span class="cls">self</span>.llm, prompt=SQL_GENERATION_PROMPT)
+        sql   = <span class="kw">await</span> chain.arun(context=context, question=question)
+
+        <span class="cm"># 3. Execute against Trino, explain result</span>
+        rows   = <span class="cls">self</span>.trino.execute(sql)
+        answer = <span class="kw">await</span> <span class="cls">self</span>.llm.apredict(
+            EXPLAIN_PROMPT.format(question=question, rows=rows[:<span class="num">20</span>])
+        )
+        <span class="kw">return</span> {<span class="str">"sql"</span>: sql, <span class="str">"rows"</span>: rows, <span class="str">"answer"</span>: answer}</pre>
+        </div>
+      </div>
+
+      <div id="tab-dbt" class="code-pane">
+        <div class="code-block">
+          <div class="code-header">
+            <div class="code-dots"><span class="code-dot red"></span><span class="code-dot yellow"></span><span class="code-dot green"></span></div>
+            <span class="file-name">dbt_project/models/silver/dim_customers.sql</span>
+          </div>
+          <pre><span class="cm">-- dbt Silver model: deduplicated, SCD2-tracked customer dimension</span>
+{{ config(
+    materialized = <span class="str">'incremental'</span>,
+    unique_key    = <span class="str">'customer_id'</span>,
+    incremental_strategy = <span class="str">'merge'</span>,
+    on_schema_change = <span class="str">'sync_all_columns'</span>,
+    file_format  = <span class="str">'delta'</span>,
+) }}
+
+<span class="kw">WITH</span> ranked <span class="kw">AS</span> (
+    <span class="kw">SELECT</span> *,
+           ROW_NUMBER() OVER (
+               PARTITION BY customer_id
+               ORDER BY     _ingestion_ts DESC
+           ) <span class="kw">AS</span> rn
+    <span class="kw">FROM</span>  {{ source(<span class="str">'bronze'</span>, <span class="str">'customers'</span>) }}
+    {% <span class="kw">if</span> is_incremental() %}
+    <span class="kw">WHERE</span> _ingestion_ts > (SELECT MAX(valid_from) FROM {{ this }})
+    {% endif %}
+),
+deduped <span class="kw">AS</span> (
+    SELECT * FROM ranked WHERE rn = <span class="num">1</span>
+)
+
+<span class="kw">SELECT</span>
+    customer_id,
+    email,
+    tier,
+    region,
+    SHA2(CONCAT_WS(<span class="str">'|'</span>, email, tier, region), <span class="num">256</span>) <span class="kw">AS</span> _row_hash,
+    current_timestamp() <span class="kw">AS</span> valid_from,
+    NULL               <span class="kw">AS</span> valid_to,
+    TRUE               <span class="kw">AS</span> is_current
+<span class="kw">FROM</span> deduped</pre>
+        </div>
+      </div>
+
+      <div id="tab-trino" class="code-pane">
+        <div class="code-block">
+          <div class="code-header">
+            <div class="code-dots"><span class="code-dot red"></span><span class="code-dot yellow"></span><span class="code-dot green"></span></div>
+            <span class="file-name">trino/federation_query.sql</span>
+          </div>
+          <pre><span class="cm">-- Cross-source federated query: Delta Lake + BigQuery + PostgreSQL</span>
+<span class="kw">SELECT</span>
+    o.order_id,
+    c.email                  <span class="kw">AS</span> customer_email,
+    c.tier                   <span class="kw">AS</span> customer_tier,
+    p.name                   <span class="kw">AS</span> product_name,
+    p.category,
+    SUM(o.amount)            <span class="kw">AS</span> total_revenue,
+    AVG(r.rating)            <span class="kw">AS</span> avg_review_rating,
+    COUNT(DISTINCT o.order_id) <span class="kw">AS</span> order_count
+<span class="kw">FROM</span>
+    <span class="cm">-- Delta Lake table on GCS via Hive metastore</span>
+    delta.gold.orders       o
+    <span class="cm">-- BigQuery Gold dimension</span>
+    JOIN bigquery.analytics.dim_customers c
+         ON o.customer_id = c.customer_id
+         AND c.is_current  = TRUE
+    <span class="cm">-- PostgreSQL operational catalog</span>
+    JOIN postgresql.ops.products p
+         ON o.product_id = p.id
+    <span class="cm">-- Iceberg review table on GCS</span>
+    LEFT JOIN iceberg.silver.reviews r
+         ON o.order_id = r.order_id
+<span class="kw">WHERE</span>
+    o.order_date >= DATE_ADD(<span class="str">'day'</span>, -<span class="num">30</span>, CURRENT_DATE)
+<span class="kw">GROUP BY</span> <span class="num">1</span>,<span class="num">2</span>,<span class="num">3</span>,<span class="num">4</span>,<span class="num">5</span>
+<span class="kw">ORDER BY</span> total_revenue <span class="kw">DESC</span>
+<span class="kw">LIMIT</span> <span class="num">100</span></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ──────────── TECH STACK ──────────── -->
+<section id="tech-stack">
+  <div class="section-inner">
+    <div class="section-header reveal">
+      <span class="section-tag">Technology</span>
+      <h2 class="section-title">Modern Open Stack</h2>
+      <p class="section-desc">
+        Every component chosen for openness, performance, and production maturity.
+      </p>
+    </div>
+    <div class="stack-grid reveal">
+      <div class="stack-item"><span class="stack-logo">△</span><div class="stack-name">Delta Lake 3.x</div><div class="stack-role">Open Table Format</div></div>
+      <div class="stack-item"><span class="stack-logo">🧊</span><div class="stack-name">Apache Iceberg 1.5</div><div class="stack-role">Open Table Format</div></div>
+      <div class="stack-item"><span class="stack-logo">⚡</span><div class="stack-name">Apache Spark 3.5</div><div class="stack-role">Distributed Compute</div></div>
+      <div class="stack-item"><span class="stack-logo">🔺</span><div class="stack-name">Trino 430</div><div class="stack-role">Query Federation</div></div>
+      <div class="stack-item"><span class="stack-logo">🔷</span><div class="stack-name">dbt-spark</div><div class="stack-role">Transformations</div></div>
+      <div class="stack-item"><span class="stack-logo">☁</span><div class="stack-name">GCP Dataproc</div><div class="stack-role">Managed Spark</div></div>
+      <div class="stack-item"><span class="stack-logo">📦</span><div class="stack-name">Google Cloud Storage</div><div class="stack-role">Object Storage</div></div>
+      <div class="stack-item"><span class="stack-logo">📊</span><div class="stack-name">BigQuery</div><div class="stack-role">Analytics Warehouse</div></div>
+      <div class="stack-item"><span class="stack-logo">🔴</span><div class="stack-name">Apache Kafka</div><div class="stack-role">Event Streaming</div></div>
+      <div class="stack-item"><span class="stack-logo">🔗</span><div class="stack-name">Debezium</div><div class="stack-role">CDC Capture</div></div>
+      <div class="stack-item"><span class="stack-logo">🤖</span><div class="stack-name">LangChain</div><div class="stack-role">LLM Orchestration</div></div>
+      <div class="stack-item"><span class="stack-logo">🌐</span><div class="stack-name">Vertex AI</div><div class="stack-role">Embeddings & LLM</div></div>
+      <div class="stack-item"><span class="stack-logo">🗺</span><div class="stack-name">GCP DataPlex</div><div class="stack-role">Data Catalog</div></div>
+      <div class="stack-item"><span class="stack-logo">🏗</span><div class="stack-name">Terraform</div><div class="stack-role">Infrastructure as Code</div></div>
+      <div class="stack-item"><span class="stack-logo">🎵</span><div class="stack-name">Cloud Composer</div><div class="stack-role">Airflow Orchestration</div></div>
+      <div class="stack-item"><span class="stack-logo">🐍</span><div class="stack-name">Python 3.11+</div><div class="stack-role">Core Language</div></div>
+      <div class="stack-item"><span class="stack-logo">🧪</span><div class="stack-name">Great Expectations</div><div class="stack-role">Data Quality</div></div>
+      <div class="stack-item"><span class="stack-logo">🚀</span><div class="stack-name">FastAPI</div><div class="stack-role">Semantic Search API</div></div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ──────────── COMPARISON ──────────── -->
+<section id="comparison">
+  <div class="section-inner">
+    <div class="section-header reveal">
+      <span class="section-tag">Format Decision Guide</span>
+      <h2 class="section-title">Delta Lake vs Apache Iceberg</h2>
+      <p class="section-desc">
+        Both formats are supported. Choose based on your query engine ecosystem and operational requirements.
+      </p>
+    </div>
+    <div class="table-wrap reveal">
+      <table>
+        <thead>
+          <tr>
+            <th>Feature</th>
+            <th>Delta Lake 3.x</th>
+            <th>Apache Iceberg 1.5</th>
+            <th>Winner</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>ACID Transactions</td>
+            <td class="check">✓ Optimistic CC</td>
+            <td class="check">✓ Snapshot Isolation</td>
+            <td>Tie</td>
+          </tr>
+          <tr>
+            <td>Time Travel</td>
+            <td class="check">✓ VERSION / TIMESTAMP</td>
+            <td class="check">✓ Snapshot-based</td>
+            <td>Tie</td>
+          </tr>
+          <tr>
+            <td>Schema Evolution</td>
+            <td class="check">✓ Full support</td>
+            <td class="check">✓ Full + type widening</td>
+            <td class="partial">Iceberg (type widening)</td>
+          </tr>
+          <tr>
+            <td>Spark Integration</td>
+            <td class="check">✓ Native (DataBricks)</td>
+            <td class="check">✓ Full support</td>
+            <td class="partial">Delta (tighter)</td>
+          </tr>
+          <tr>
+            <td>Trino / Presto</td>
+            <td class="partial">⚡ Good</td>
+            <td class="check">✓ Native first-class</td>
+            <td class="partial">Iceberg</td>
+          </tr>
+          <tr>
+            <td>Flink Integration</td>
+            <td class="partial">⚡ Limited</td>
+            <td class="check">✓ Full streaming</td>
+            <td class="partial">Iceberg</td>
+          </tr>
+          <tr>
+            <td>BigQuery Integration</td>
+            <td class="check">✓ BQ Omni</td>
+            <td class="check">✓ BQ External Tables</td>
+            <td>Tie</td>
+          </tr>
+          <tr>
+            <td>Small File Problem</td>
+            <td class="check">✓ OPTIMIZE + ZORDER</td>
+            <td class="check">✓ Rewrite Data Files</td>
+            <td>Tie</td>
+          </tr>
+          <tr>
+            <td>Partition Evolution</td>
+            <td class="cross">✗ Static partitions</td>
+            <td class="check">✓ Hidden partitioning</td>
+            <td class="partial">Iceberg</td>
+          </tr>
+          <tr>
+            <td>Branching / Tagging</td>
+            <td class="cross">✗ Not supported</td>
+            <td class="check">✓ Branch + Tag API</td>
+            <td class="partial">Iceberg</td>
+          </tr>
+          <tr>
+            <td>Ecosystem (2025)</td>
+            <td class="check">✓ Databricks-driven</td>
+            <td class="check">✓ Vendor-neutral</td>
+            <td class="partial">Iceberg (broader)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ──────────── GETTING STARTED ──────────── -->
+<section id="getting-started">
+  <div class="section-inner">
+    <div class="section-header reveal">
+      <span class="section-tag">Quickstart</span>
+      <h2 class="section-title">Get Running in Minutes</h2>
+      <p class="section-desc">From clone to first Bronze ingestion in under 5 minutes.</p>
+    </div>
+    <div class="steps-grid">
+      <div class="step-card reveal reveal-delay-1">
+        <div class="step-num">1</div>
+        <h3>Clone & Install</h3>
+        <p>Clone the repository and install all dependencies including PySpark, Delta Lake, and GCP libraries.</p>
+        <div class="inline-code">git clone https://github.com/jthiruveedula/data-lakehouse-modern-stack<br/>cd data-lakehouse-modern-stack<br/>pip install -r requirements.txt</div>
+      </div>
+      <div class="step-card reveal reveal-delay-2">
+        <div class="step-num">2</div>
+        <h3>Configure GCP</h3>
+        <p>Set up your GCP project credentials and configure the lakehouse settings with your project ID and GCS bucket.</p>
+        <div class="inline-code">gcloud auth application-default login<br/>export GCP_PROJECT="your-project-id"<br/>export GCS_BUCKET="your-lakehouse-bucket"</div>
+      </div>
+      <div class="step-card reveal reveal-delay-3">
+        <div class="step-num">3</div>
+        <h3>Provision Infrastructure</h3>
+        <p>Use Terraform to provision Dataproc, GKE for Trino, GCS buckets, and IAM roles in one command.</p>
+        <div class="inline-code">cd infrastructure/<br/>terraform init<br/>terraform apply -var="project=$GCP_PROJECT"</div>
+      </div>
+      <div class="step-card reveal reveal-delay-4">
+        <div class="step-num">4</div>
+        <h3>Run First Ingestion</h3>
+        <p>Ingest your first dataset into the Bronze layer. The orchestrator handles partitioning, metadata enrichment, and table registration automatically.</p>
+        <div class="inline-code">from src import MedallionPipelineOrchestrator<br/>orch = MedallionPipelineOrchestrator(config)<br/>await orch.ingest_to_bronze(df, table, "source")</div>
+      </div>
+      <div class="step-card reveal reveal-delay-1">
+        <div class="step-num">5</div>
+        <h3>Run dbt Transformations</h3>
+        <p>Execute dbt models to transform Bronze data through Silver deduplication and SCD2 into Gold aggregation tables.</p>
+        <div class="inline-code">cd dbt_project/<br/>dbt deps<br/>dbt run --select silver+<br/>dbt test</div>
+      </div>
+      <div class="step-card reveal reveal-delay-2">
+        <div class="step-num">6</div>
+        <h3>Query with Natural Language</h3>
+        <p>Start the semantic search API and ask data questions in plain English. The GenAI layer translates to SQL and returns answers.</p>
+        <div class="inline-code">uvicorn src.semantic_search.api:app --reload<br/><br/>curl -X POST /query \<br/>  -d '{"question": "Top 10 customers by revenue last month?"}'</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ──────────── CTA ──────────── -->
+<section id="cta">
+  <div class="section-inner">
+    <div class="cta-box reveal">
+      <h2>Ready to Build Your <span class="gradient-text">Modern Lakehouse</span>?</h2>
+      <p>Fork the repo, follow the quickstart, and have a production-grade data platform running on GCP in under a day.</p>
+      <div class="hero-actions" style="margin-bottom:0">
+        <a href="https://github.com/jthiruveedula/data-lakehouse-modern-stack" class="btn btn-primary">
+          View on GitHub →
+        </a>
+        <a href="https://github.com/jthiruveedula/data-lakehouse-modern-stack/issues" class="btn btn-outline">
+          Open an Issue
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ──────────── FOOTER ──────────── -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <a href="#" class="nav-logo" style="margin-bottom:0.75rem;display:inline-flex;">
+          <span class="logo-icon">⬡</span>
+          <span>DataLakehouse</span>
+        </a>
+        <p>A production-grade open data lakehouse built on Delta Lake + Apache Iceberg with medallion architecture, dbt, Trino, and GenAI semantic search on GCP.</p>
+        <div class="badges">
+          <span class="badge green">● Open Source</span>
+          <span class="badge blue">● GCP Native</span>
+          <span class="badge purple">● GenAI Ready</span>
+        </div>
+      </div>
+      <div class="footer-col">
+        <h4>Architecture</h4>
+        <ul>
+          <li><a href="#architecture">Medallion Layers</a></li>
+          <li><a href="#pipeline">Data Pipeline</a></li>
+          <li><a href="#features">Features</a></li>
+          <li><a href="#comparison">Delta vs Iceberg</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Technology</h4>
+        <ul>
+          <li><a href="#tech-stack">Full Stack</a></li>
+          <li><a href="#code-examples">Code Examples</a></li>
+          <li><a href="#getting-started">Quickstart</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Repository</h4>
+        <ul>
+          <li><a href="https://github.com/jthiruveedula/data-lakehouse-modern-stack">GitHub</a></li>
+          <li><a href="https://github.com/jthiruveedula/data-lakehouse-modern-stack/issues">Issues</a></li>
+          <li><a href="https://github.com/jthiruveedula/data-lakehouse-modern-stack/blob/main/README.md">README</a></li>
+          <li><a href="https://github.com/jthiruveedula/data-lakehouse-modern-stack/blob/main/CONTRIBUTING.md">Contributing</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2025 Data Lakehouse Modern Stack. MIT License.</span>
+      <span>Built with Delta Lake · Apache Iceberg · dbt · Trino · GCP · LangChain</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // ── PARTICLE CANVAS ──
+  const canvas = document.getElementById('hero-canvas');
+  const ctx = canvas.getContext('2d');
+  let particles = [];
+  let animId;
+
+  function resize() {
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+  }
+
+  class Particle {
+    constructor() { this.reset(); }
+    reset() {
+      this.x = Math.random() * canvas.width;
+      this.y = Math.random() * canvas.height;
+      this.vx = (Math.random() - 0.5) * 0.4;
+      this.vy = (Math.random() - 0.5) * 0.4;
+      this.r = Math.random() * 1.5 + 0.5;
+      this.alpha = Math.random() * 0.5 + 0.1;
+      this.color = Math.random() > 0.5 ? '0,212,255' : '124,58,237';
+    }
+    update() {
+      this.x += this.vx; this.y += this.vy;
+      if (this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) this.reset();
+    }
+    draw() {
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${this.color},${this.alpha})`;
+      ctx.fill();
+    }
+  }
+
+  function initParticles() {
+    particles = Array.from({ length: 120 }, () => new Particle());
+  }
+
+  function drawConnections() {
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const dx = particles[i].x - particles[j].x;
+        const dy = particles[i].y - particles[j].y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 120) {
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.strokeStyle = `rgba(0,212,255,${0.06 * (1 - dist / 120)})`;
+          ctx.lineWidth = 0.5;
+          ctx.stroke();
+        }
+      }
+    }
+  }
+
+  function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    particles.forEach(p => { p.update(); p.draw(); });
+    drawConnections();
+    animId = requestAnimationFrame(animate);
+  }
+
+  window.addEventListener('resize', () => { resize(); initParticles(); });
+  resize(); initParticles(); animate();
+
+  // ── SCROLL REVEAL ──
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+  // ── STICKY NAV ──
+  window.addEventListener('scroll', () => {
+    document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 50);
+  });
+
+  // ── MOBILE MENU ──
+  function toggleMenu() {
+    document.getElementById('nav-links').classList.toggle('open');
+  }
+  document.querySelectorAll('#nav-links a').forEach(a => {
+    a.addEventListener('click', () => document.getElementById('nav-links').classList.remove('open'));
+  });
+
+  // ── CODE TABS ──
+  function showTab(id) {
+    document.querySelectorAll('.code-pane').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    event.target.classList.add('active');
+  }
+
+  // ── COUNTER ANIMATION ──
+  function animateCounters() {
+    document.querySelectorAll('.stat-value').forEach(el => {
+      el.style.opacity = '0';
+      el.style.transform = 'scale(0.5)';
+      setTimeout(() => {
+        el.style.transition = 'all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)';
+        el.style.opacity = '1';
+        el.style.transform = 'scale(1)';
+      }, 800 + Array.from(el.parentElement.parentElement.children).indexOf(el.parentElement) * 150);
+    });
+  }
+  animateCounters();
+</script>
+</body>
+</html>
