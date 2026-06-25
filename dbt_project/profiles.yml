@@ -1,0 +1,31 @@
+data_lakehouse:
+  target: dev
+  outputs:
+    dev:
+      type: spark
+      method: thrift
+      host: "{{ env_var('SPARK_THRIFT_HOST', 'localhost') }}"
+      port: 10001
+      user: "{{ env_var('SPARK_USER', 'hive') }}"
+      schema: dev
+      connect_retries: 5
+      connect_timeout: 60
+      threads: 4
+    prod:
+      type: spark
+      method: thrift
+      host: "{{ env_var('SPARK_THRIFT_HOST') }}"
+      port: 10001
+      user: "{{ env_var('SPARK_USER') }}"
+      schema: prod
+      connect_retries: 10
+      connect_timeout: 120
+      threads: 8
+    bigquery:
+      type: bigquery
+      method: oauth
+      project: "{{ env_var('GCP_PROJECT') }}"
+      dataset: "{{ env_var('BQ_DATASET', 'dbt_gold') }}"
+      location: "{{ env_var('GCP_LOCATION', 'US') }}"
+      threads: 8
+      timeout_seconds: 300

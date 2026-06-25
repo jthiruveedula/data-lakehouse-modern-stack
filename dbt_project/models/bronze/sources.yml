@@ -1,0 +1,8 @@
+version: 2
+
+sources:
+  - name: raw
+    description: "Raw landing zone — append-only data from ingestion layer"
+    tables:
+      - name: events
+        description: "Raw event stream from Kafka/API ingestion"

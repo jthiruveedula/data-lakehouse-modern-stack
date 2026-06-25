@@ -1,0 +1,40 @@
+name: data_lakehouse
+version: '1.0.0'
+config-version: 2
+
+profile: data_lakehouse
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+target-path: "target"
+clean-targets: ["target", "dbt_packages"]
+
+models:
+  data_lakehouse:
+    bronze:
+      +materialized: incremental
+      +incremental_strategy: append
+      +file_format: delta
+      +on_schema_change: sync_all_columns
+      +tags: ["bronze"]
+    silver:
+      +materialized: incremental
+      +incremental_strategy: merge
+      +file_format: delta
+      +on_schema_change: sync_all_columns
+      +tags: ["silver"]
+    gold:
+      +materialized: table
+      +file_format: delta
+      +tags: ["gold"]
+
+vars:
+  start_date: '2020-01-01'
+  bronze_database: bronze
+  silver_database: silver
+  gold_database: gold

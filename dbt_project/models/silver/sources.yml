@@ -1,0 +1,10 @@
+version: 2
+
+sources:
+  - name: bronze
+    description: "Bronze layer — Delta Lake tables after initial dedup"
+    tables:
+      - name: customers
+        description: "Customer records from bronze ingestion"
+      - name: orders
+        description: "Order records from bronze ingestion"

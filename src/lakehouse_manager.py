@@ -5,26 +5,25 @@ Trino federation, and CDC via Debezium + Kafka.
 """
 
 from __future__ import annotations
+
 import json
 import logging
 import time
 from dataclasses import dataclass, field
-from enum import Enum
-from pathlib import Path
-from typing import Any
+from enum import StrEnum
 
 from google.cloud import bigquery, storage
 
 logger = logging.getLogger(__name__)
 
 
-class MedallionLayer(str, Enum):
+class MedallionLayer(StrEnum):
     BRONZE = "bronze"
     SILVER = "silver"
     GOLD = "gold"
 
 
-class TableFormat(str, Enum):
+class TableFormat(StrEnum):
     DELTA = "delta"
     ICEBERG = "iceberg"
     PARQUET = "parquet"
@@ -97,7 +96,9 @@ class MedallionPipelineOrchestrator:
             "\n".join(json.dumps(r) for r in enriched_rows),
             content_type="application/json",
         )
-        logger.info("Ingested %d rows to bronze: gs://%s/%s", len(data), self.config.gcs_bucket, gcs_path)
+        logger.info(
+            "Ingested %d rows to bronze: gs://%s/%s", len(data), self.config.gcs_bucket, gcs_path
+        )
         return {"rows": len(data), "gcs_path": gcs_path, "layer": "bronze"}
 
     # ------------------------------------------------------------------
@@ -147,11 +148,11 @@ class MedallionPipelineOrchestrator:
                 UPDATE SET T.valid_to = CURRENT_TIMESTAMP(), T.is_current = FALSE
             WHEN NOT MATCHED THEN
                 INSERT (
-                    {', '.join(f.get('name', '') for f in table.schema)},
+                    {", ".join(f.get("name", "") for f in table.schema)},
                     valid_from, valid_to, is_current, _row_hash
                 )
                 VALUES (
-                    {', '.join(f'S.{f.get("name", "")}' for f in table.schema)},
+                    {", ".join(f"S.{f.get('name', '')}" for f in table.schema)},
                     CURRENT_TIMESTAMP(), NULL, TRUE,
                     TO_HEX(MD5(TO_JSON_STRING(S)))
                 )
@@ -188,7 +189,6 @@ class MedallionPipelineOrchestrator:
         schema: list[dict],
     ) -> None:
         """Register an Iceberg table in BigQuery as external table."""
-        col_defs = ", ".join(f"{c['name']} {c['type']}" for c in schema)
         sql = f"""
             CREATE OR REPLACE EXTERNAL TABLE
               `{self.config.project_id}.{self.config.bq_dataset}.{table_name}`
@@ -210,9 +210,21 @@ class MedallionPipelineOrchestrator:
             "table": table_name,
             "lineage": [
                 {"layer": "source", "type": "API/Kafka/CDC"},
-                {"layer": "bronze", "type": "GCS raw JSON", "path": f"gs://{self.config.gcs_bucket}/bronze/{table_name}/"},
-                {"layer": "silver", "type": "BQ table", "ref": f"{self.config.bq_dataset}.{table_name}_silver"},
-                {"layer": "gold", "type": "BQ table", "ref": f"{self.config.bq_dataset}.{table_name}_gold"},
+                {
+                    "layer": "bronze",
+                    "type": "GCS raw JSON",
+                    "path": f"gs://{self.config.gcs_bucket}/bronze/{table_name}/",
+                },
+                {
+                    "layer": "silver",
+                    "type": "BQ table",
+                    "ref": f"{self.config.bq_dataset}.{table_name}_silver",
+                },
+                {
+                    "layer": "gold",
+                    "type": "BQ table",
+                    "ref": f"{self.config.bq_dataset}.{table_name}_gold",
+                },
             ],
         }
 
@@ -222,9 +234,9 @@ class MedallionPipelineOrchestrator:
     def _get_table(self, name: str, layer: MedallionLayer) -> LakehouseTable:
         if name not in self._tables:
             self._tables[name] = LakehouseTable(
-                name=name, layer=layer,
+                name=name,
+                layer=layer,
                 format=self.config.default_format,
                 gcs_path=f"{layer.value}/{name}",
             )
         return self._tables[name]
-
