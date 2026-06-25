@@ -5,7 +5,6 @@ from __future__ import annotations
 from unittest.mock import MagicMock, patch
 
 import pytest
-
 from src.ingestion.api_ingester import APIConfig, APIIngester
 from src.ingestion.kafka_processor import KafkaConfig, KafkaProcessor
 

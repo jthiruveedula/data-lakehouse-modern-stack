@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 
-from pyspark.sql import DataFrame, SparkSession
+from pyspark.sql import SparkSession
 
 logger = logging.getLogger(__name__)
 

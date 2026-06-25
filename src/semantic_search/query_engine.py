@@ -92,8 +92,8 @@ class NLQueryEngine:
         )
 
     async def _generate_sql(self, question: str, context: str) -> str:
-        from langchain.prompts import PromptTemplate
         from langchain.chains import LLMChain
+        from langchain.prompts import PromptTemplate
 
         prompt = PromptTemplate(
             input_variables=["context", "question"],

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import logging
 from dataclasses import dataclass
 from typing import Any
@@ -56,7 +55,6 @@ class MetadataIndexer:
 
     def _get_vector_store(self) -> Any:
         if self._vector_store is None:
-            from chromadb import PersistentClient
             from langchain_community.vectorstores import Chroma
             from langchain_google_vertexai import VertexAIEmbeddings
 

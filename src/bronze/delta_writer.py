@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Any
 from uuid import uuid4
 
 from pyspark.sql import DataFrame, SparkSession

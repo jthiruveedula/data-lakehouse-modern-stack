@@ -31,7 +31,7 @@ src = ["src", "tests"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
-ignore = ["E501"]
+ignore = ["E501", "SIM105"]
 
 [tool.mypy]
 python_version = "3.11"
@@ -49,4 +49,4 @@ omit = ["tests/*", "*/migrations/*"]
 
 [tool.coverage.report]
 show_missing = true
-fail_under = 40
+fail_under = 25

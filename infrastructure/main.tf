@@ -151,10 +151,11 @@ resource "google_dataproc_autoscaling_policy" "policy" {
 
   basic_algorithm {
     yarn_config {
-      scale_up_factor   = 1.0
-      scale_down_factor = 1.0
+      scale_up_factor                = 1.0
+      scale_down_factor              = 1.0
       scale_up_min_worker_fraction   = 0.0
       scale_down_min_worker_fraction = 0.0
+      graceful_decommission_timeout  = "3600s"
     }
     cooldown_period = "600s"
   }
@@ -244,6 +245,7 @@ resource "google_dataplex_zone" "bronze" {
   project  = var.project_id
   type     = "RAW"
   resource_spec { location_type = "MULTI_REGION" }
+  discovery_spec { enabled = false }
 }
 
 resource "google_dataplex_zone" "silver" {
@@ -253,6 +255,7 @@ resource "google_dataplex_zone" "silver" {
   project  = var.project_id
   type     = "CURATED"
   resource_spec { location_type = "MULTI_REGION" }
+  discovery_spec { enabled = false }
 }
 
 resource "google_dataplex_zone" "gold" {
@@ -262,6 +265,7 @@ resource "google_dataplex_zone" "gold" {
   project  = var.project_id
   type     = "CURATED"
   resource_spec { location_type = "MULTI_REGION" }
+  discovery_spec { enabled = false }
 }
 
 locals {

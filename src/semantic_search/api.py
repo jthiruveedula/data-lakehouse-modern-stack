@@ -22,6 +22,7 @@ async def lifespan(app: FastAPI):
     # Initialise connections only in real deployments
     if os.getenv("LAKEHOUSE_ENV") == "production":
         import trino
+
         from src.semantic_search.metadata_indexer import MetadataIndexer
         from src.semantic_search.query_engine import NLQueryEngine
 
