@@ -108,9 +108,7 @@ class LakehouseOptimizer:
 
     def rewrite_iceberg_manifests(self, table_name: str, schema: str = "bronze") -> None:
         full_table = f"{self.catalog}.{schema}.{table_name}"
-        self.spark.sql(
-            f"CALL {self.catalog}.system.rewrite_manifests(table => '{full_table}')"
-        )
+        self.spark.sql(f"CALL {self.catalog}.system.rewrite_manifests(table => '{full_table}')")
 
     # ── Full maintenance sweep ───────────────────────────────────────────────
 

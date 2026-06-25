@@ -10,7 +10,6 @@ from src.ingestion.kafka_processor import KafkaConfig, KafkaProcessor
 
 
 class TestAPIIngester:
-
     @pytest.fixture
     def config(self):
         return APIConfig(
@@ -76,7 +75,6 @@ class TestAPIIngester:
 
 
 class TestKafkaConfig:
-
     def test_consumer_config_basic(self):
         cfg = KafkaConfig(
             bootstrap_servers="localhost:9092",
@@ -102,7 +100,6 @@ class TestKafkaConfig:
 
 
 class TestKafkaProcessor:
-
     @pytest.fixture
     def cfg(self):
         return KafkaConfig(bootstrap_servers="localhost:9092", group_id="test")

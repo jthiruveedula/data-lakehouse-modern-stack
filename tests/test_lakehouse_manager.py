@@ -27,8 +27,10 @@ def config():
 
 @pytest.fixture
 def orchestrator(config):
-    with patch("src.lakehouse_manager.bigquery.Client"), \
-         patch("src.lakehouse_manager.storage.Client"):
+    with (
+        patch("src.lakehouse_manager.bigquery.Client"),
+        patch("src.lakehouse_manager.storage.Client"),
+    ):
         return MedallionPipelineOrchestrator(config)
 
 
@@ -62,7 +64,6 @@ def silver_table():
 
 
 class TestMedallionPipelineOrchestrator:
-
     def test_init_creates_orchestrator(self, orchestrator, config):
         assert orchestrator.config.project_id == "test-project"
         assert orchestrator.config.gcs_bucket == "test-bucket"
@@ -116,7 +117,6 @@ class TestMedallionPipelineOrchestrator:
 
 
 class TestLakehouseConfig:
-
     def test_default_format_is_delta(self, config):
         assert config.default_format == TableFormat.DELTA
 
@@ -131,7 +131,6 @@ class TestLakehouseConfig:
 
 
 class TestLakehouseTable:
-
     def test_table_creation(self, bronze_table):
         assert bronze_table.name == "orders"
         assert bronze_table.layer == MedallionLayer.BRONZE

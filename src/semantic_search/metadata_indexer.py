@@ -27,8 +27,7 @@ class TableMetadata:
     def to_document(self) -> str:
         """Render metadata as a natural-language document for embedding."""
         col_lines = "\n".join(
-            f"  - {c['name']} ({c['type']}): {c.get('description', '')}"
-            for c in self.columns
+            f"  - {c['name']} ({c['type']}): {c.get('description', '')}" for c in self.columns
         )
         samples = ""
         if self.sample_values:
@@ -89,14 +88,15 @@ class MetadataIndexer:
         results = vs.similarity_search(query, k=k)
         return results
 
-    def crawl_trino(self, trino_conn: Any, catalogs: list[str] | None = None) -> list[TableMetadata]:
+    def crawl_trino(
+        self, trino_conn: Any, catalogs: list[str] | None = None
+    ) -> list[TableMetadata]:
         """Auto-discover all tables from Trino information_schema."""
         cursor = trino_conn.cursor()
         tables: list[TableMetadata] = []
 
         catalog_filter = (
-            f"AND table_catalog IN ({', '.join(repr(c) for c in catalogs)})"
-            if catalogs else ""
+            f"AND table_catalog IN ({', '.join(repr(c) for c in catalogs)})" if catalogs else ""
         )
         cursor.execute(
             f"SELECT table_catalog, table_schema, table_name "
@@ -105,9 +105,9 @@ class MetadataIndexer:
         )
         for catalog, schema, tbl in cursor.fetchall():
             cols = self._get_columns(cursor, catalog, schema, tbl)
-            tables.append(TableMetadata(
-                catalog=catalog, schema=schema, table_name=tbl, columns=cols
-            ))
+            tables.append(
+                TableMetadata(catalog=catalog, schema=schema, table_name=tbl, columns=cols)
+            )
 
         return tables
 

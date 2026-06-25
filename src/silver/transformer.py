@@ -77,18 +77,14 @@ class SilverTransformer:
         concat_expr = F.concat_ws("|", *[F.col(c).cast("string") for c in cols])
         return df.withColumn("_row_hash", F.sha2(concat_expr, 256))
 
-    def _apply_scd2(
-        self, incoming: DataFrame, config: SilverTableConfig
-    ) -> tuple[int, int]:
+    def _apply_scd2(self, incoming: DataFrame, config: SilverTableConfig) -> tuple[int, int]:
         silver_path = f"gs://{self.gcs_bucket}/silver/{config.table_name}"
         hashed = self._hash_row(incoming, config.hash_cols)
 
         # Register temp views for the MERGE statement
         hashed.createOrReplaceTempView(f"_incoming_{config.table_name}")
 
-        pk_join = " AND ".join(
-            f"t.{k} = s.{k}" for k in config.primary_keys
-        )
+        pk_join = " AND ".join(f"t.{k} = s.{k}" for k in config.primary_keys)
 
         try:
             self.spark.sql(f"""
@@ -116,30 +112,22 @@ class SilverTransformer:
         metrics = self._last_merge_metrics(silver_path)
         return metrics.get("numTargetRowsInserted", 0), metrics.get("numTargetRowsUpdated", 0)
 
-    def _bootstrap_scd2(
-        self, df: DataFrame, silver_path: str, config: SilverTableConfig
-    ) -> None:
-        df.withColumn("_valid_from", F.current_timestamp()) \
-          .withColumn("_valid_to", F.lit(None).cast("timestamp")) \
-          .withColumn("_is_current", F.lit(True)) \
-          .write.format("delta") \
-          .mode("overwrite") \
-          .partitionBy(*config.partition_cols) \
-          .save(silver_path)
+    def _bootstrap_scd2(self, df: DataFrame, silver_path: str, config: SilverTableConfig) -> None:
+        df.withColumn("_valid_from", F.current_timestamp()).withColumn(
+            "_valid_to", F.lit(None).cast("timestamp")
+        ).withColumn("_is_current", F.lit(True)).write.format("delta").mode(
+            "overwrite"
+        ).partitionBy(*config.partition_cols).save(silver_path)
 
     def _overwrite_silver(self, df: DataFrame, config: SilverTableConfig) -> None:
         silver_path = f"gs://{self.gcs_bucket}/silver/{config.table_name}"
-        df.write.format("delta") \
-          .mode("overwrite") \
-          .option("overwriteSchema", "true") \
-          .partitionBy(*config.partition_cols) \
-          .save(silver_path)
+        df.write.format("delta").mode("overwrite").option("overwriteSchema", "true").partitionBy(
+            *config.partition_cols
+        ).save(silver_path)
 
     def _last_merge_metrics(self, path: str) -> dict[str, int]:
         try:
-            row = self.spark.sql(
-                f"DESCRIBE HISTORY delta.`{path}` LIMIT 1"
-            ).first()
+            row = self.spark.sql(f"DESCRIBE HISTORY delta.`{path}` LIMIT 1").first()
             return row["operationMetrics"] if row else {}
         except Exception:
             return {}

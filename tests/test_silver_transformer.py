@@ -23,13 +23,14 @@ def config():
 
 
 class TestSilverTransformer:
-
     def test_init(self, transformer):
         assert transformer.gcs_bucket == "test-lakehouse-bucket"
 
     def test_transform_no_scd2(self, transformer, mock_df, config):
-        with patch.object(transformer, "_deduplicate", return_value=mock_df), \
-             patch.object(transformer, "_overwrite_silver"):
+        with (
+            patch.object(transformer, "_deduplicate", return_value=mock_df),
+            patch.object(transformer, "_overwrite_silver"),
+        ):
             result = transformer.transform(mock_df, config)
 
         assert result.table_name == "orders"
@@ -37,8 +38,10 @@ class TestSilverTransformer:
 
     def test_transform_with_scd2(self, transformer, mock_df, config):
         config.scd2_enabled = True
-        with patch.object(transformer, "_deduplicate", return_value=mock_df), \
-             patch.object(transformer, "_apply_scd2", return_value=(80, 20)):
+        with (
+            patch.object(transformer, "_deduplicate", return_value=mock_df),
+            patch.object(transformer, "_apply_scd2", return_value=(80, 20)),
+        ):
             result = transformer.transform(mock_df, config)
 
         assert result.scd2_inserts == 80
@@ -47,8 +50,10 @@ class TestSilverTransformer:
     def test_duplicate_tracking(self, transformer, mock_df, config):
         deduped_df = MagicMock()
         deduped_df.count.return_value = 75
-        with patch.object(transformer, "_deduplicate", return_value=deduped_df), \
-             patch.object(transformer, "_overwrite_silver"):
+        with (
+            patch.object(transformer, "_deduplicate", return_value=deduped_df),
+            patch.object(transformer, "_overwrite_silver"),
+        ):
             result = transformer.transform(mock_df, config)
 
         assert result.duplicates_dropped == 25  # 100 in - 75 deduped
@@ -56,8 +61,10 @@ class TestSilverTransformer:
     def test_rows_out_matches_deduped(self, transformer, mock_df, config):
         deduped_df = MagicMock()
         deduped_df.count.return_value = 90
-        with patch.object(transformer, "_deduplicate", return_value=deduped_df), \
-             patch.object(transformer, "_overwrite_silver"):
+        with (
+            patch.object(transformer, "_deduplicate", return_value=deduped_df),
+            patch.object(transformer, "_overwrite_silver"),
+        ):
             result = transformer.transform(mock_df, config)
 
         assert result.rows_out == 90

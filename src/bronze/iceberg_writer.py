@@ -52,7 +52,9 @@ class IcebergBronzeWriter:
         snapshot_id = self._latest_snapshot(catalog_table)
         logger.info(
             "Bronze Iceberg write: table=%s rows=%d snapshot=%s",
-            catalog_table, rows, snapshot_id,
+            catalog_table,
+            rows,
+            snapshot_id,
         )
         return IcebergWriteResult(
             table_name=table_name,
@@ -71,10 +73,9 @@ class IcebergBronzeWriter:
 
     def _ensure_table(self, df: DataFrame, catalog_table: str, partition_spec: str) -> None:
         try:
-            df.writeTo(catalog_table) \
-                .using("iceberg") \
-                .partitionedBy(partition_spec) \
-                .createOrReplace()
+            df.writeTo(catalog_table).using("iceberg").partitionedBy(
+                partition_spec
+            ).createOrReplace()
         except Exception:
             # Table already exists; schema evolution handled by Iceberg
             pass
@@ -90,9 +91,11 @@ class IcebergBronzeWriter:
             return None
 
     def time_travel_snapshot(self, table_name: str, snapshot_id: int) -> DataFrame:
-        return self.spark.read.format("iceberg") \
-            .option("snapshot-id", snapshot_id) \
+        return (
+            self.spark.read.format("iceberg")
+            .option("snapshot-id", snapshot_id)
             .load(f"{self.catalog}.bronze.{table_name}")
+        )
 
     def expire_snapshots(self, table_name: str, retain_last: int = 10) -> None:
         catalog_table = f"{self.catalog}.bronze.{table_name}"
@@ -104,6 +107,4 @@ class IcebergBronzeWriter:
 
     def rewrite_manifests(self, table_name: str) -> None:
         catalog_table = f"{self.catalog}.bronze.{table_name}"
-        self.spark.sql(
-            f"CALL {self.catalog}.system.rewrite_manifests(table => '{catalog_table}')"
-        )
+        self.spark.sql(f"CALL {self.catalog}.system.rewrite_manifests(table => '{catalog_table}')")

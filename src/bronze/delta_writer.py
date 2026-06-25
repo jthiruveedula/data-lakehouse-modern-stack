@@ -44,24 +44,22 @@ class DeltaBronzeWriter:
         gcs_path = f"gs://{self.gcs_bucket}/bronze/{table_name}"
         parts = partition_cols or ["_ingestion_date"]
 
-        enriched.write.format("delta") \
-            .mode("append") \
-            .partitionBy(*parts) \
-            .option("delta.autoOptimize.optimizeWrite", "true") \
-            .option("delta.autoOptimize.autoCompact", "true") \
-            .save(gcs_path)
+        enriched.write.format("delta").mode("append").partitionBy(*parts).option(
+            "delta.autoOptimize.optimizeWrite", "true"
+        ).option("delta.autoOptimize.autoCompact", "true").save(gcs_path)
 
         version = self._current_version(gcs_path)
         rows = enriched.count()
         logger.info(
             "Bronze Delta write: table=%s rows=%d version=%d path=%s",
-            table_name, rows, version, gcs_path,
+            table_name,
+            rows,
+            version,
+            gcs_path,
         )
 
         if z_order_cols:
-            self.spark.sql(
-                f"OPTIMIZE delta.`{gcs_path}` ZORDER BY ({', '.join(z_order_cols)})"
-            )
+            self.spark.sql(f"OPTIMIZE delta.`{gcs_path}` ZORDER BY ({', '.join(z_order_cols)})")
 
         return DeltaWriteResult(
             table_name=table_name,

@@ -70,7 +70,9 @@ class APIIngester:
         resp.raise_for_status()
         return resp.json()
 
-    def paginate(self, extra_params: dict[str, Any] | None = None) -> Iterator[list[dict[str, Any]]]:
+    def paginate(
+        self, extra_params: dict[str, Any] | None = None
+    ) -> Iterator[list[dict[str, Any]]]:
         """Yield pages of records until exhausted."""
         params: dict[str, Any] = {
             self.config.limit_param: self.config.page_size,
@@ -96,6 +98,7 @@ class APIIngester:
                 # Extract params from next URL for cursor-based APIs
                 if "?" in next_url:
                     from urllib.parse import parse_qs, urlparse
+
                     parsed = parse_qs(urlparse(next_url).query)
                     params.update({k: v[0] for k, v in parsed.items()})
                 page += 1

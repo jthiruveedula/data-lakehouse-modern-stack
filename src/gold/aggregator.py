@@ -39,14 +39,11 @@ class GoldAggregator:
         df = self.spark.sql(spec.source_query)
         bq_table = f"{self.project}.{self.dataset}.{spec.table_name}"
 
-        df.write.format("bigquery") \
-            .option("table", bq_table) \
-            .option("partitionField", spec.partition_field) \
-            .option("clusteredFields", ",".join(spec.cluster_fields)) \
-            .option("createDisposition", "CREATE_IF_NEEDED") \
-            .option("writeDisposition", "WRITE_TRUNCATE") \
-            .mode("overwrite") \
-            .save()
+        df.write.format("bigquery").option("table", bq_table).option(
+            "partitionField", spec.partition_field
+        ).option("clusteredFields", ",".join(spec.cluster_fields)).option(
+            "createDisposition", "CREATE_IF_NEEDED"
+        ).option("writeDisposition", "WRITE_TRUNCATE").mode("overwrite").save()
 
         rows = df.count()
         logger.info("Gold table %s written: %d rows", bq_table, rows)
@@ -63,14 +60,11 @@ class GoldAggregator:
         """
         df = self.spark.sql(query)
 
-        df.write.format("bigquery") \
-            .option("table", bq_table) \
-            .option("partitionField", spec.partition_field) \
-            .option("clusteredFields", ",".join(spec.cluster_fields)) \
-            .option("createDisposition", "CREATE_IF_NEEDED") \
-            .option("writeDisposition", "WRITE_APPEND") \
-            .mode("append") \
-            .save()
+        df.write.format("bigquery").option("table", bq_table).option(
+            "partitionField", spec.partition_field
+        ).option("clusteredFields", ",".join(spec.cluster_fields)).option(
+            "createDisposition", "CREATE_IF_NEEDED"
+        ).option("writeDisposition", "WRITE_APPEND").mode("append").save()
 
         rows = df.count()
         logger.info("Incremental Gold write %s: %d rows (watermark > %s)", bq_table, rows, last_ts)
@@ -78,11 +72,13 @@ class GoldAggregator:
 
     def _get_watermark(self, bq_table: str, col: str) -> str:
         try:
-            row = self.spark.read.format("bigquery") \
-                .option("table", bq_table) \
-                .load() \
-                .selectExpr(f"MAX({col}) AS wm") \
+            row = (
+                self.spark.read.format("bigquery")
+                .option("table", bq_table)
+                .load()
+                .selectExpr(f"MAX({col}) AS wm")
                 .first()
+            )
             return str(row["wm"]) if row and row["wm"] else "1970-01-01"
         except Exception:
             return "1970-01-01"
@@ -90,6 +86,7 @@ class GoldAggregator:
     def refresh_materialized_view(self, view_name: str) -> None:
         """Trigger a BigQuery scheduled query refresh by name."""
         from google.cloud import bigquery
+
         client = bigquery.Client(project=self.project)
         query = f"CALL BQ.REFRESH_MATERIALIZED_VIEW('{self.project}.{self.dataset}.{view_name}')"
         client.query(query).result()

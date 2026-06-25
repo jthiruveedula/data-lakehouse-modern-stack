@@ -62,6 +62,7 @@ class NLQueryEngine:
     def _get_llm(self) -> Any:
         if self._llm is None:
             from langchain_google_vertexai import VertexAI
+
             self._llm = VertexAI(model_name=self.model_name, temperature=0.0)
         return self._llm
 
@@ -69,8 +70,7 @@ class NLQueryEngine:
         # Retrieve relevant schemas via semantic similarity
         schema_docs = self.indexer.search(question, k=self.top_k)
         context = "\n\n".join(
-            d.page_content if hasattr(d, "page_content") else str(d)
-            for d in schema_docs
+            d.page_content if hasattr(d, "page_content") else str(d) for d in schema_docs
         )
 
         # Generate SQL
@@ -108,9 +108,7 @@ class NLQueryEngine:
         columns = [d[0] for d in cursor.description]
         return [dict(zip(columns, row, strict=False)) for row in cursor.fetchmany(100)]
 
-    async def _explain(
-        self, question: str, sql: str, rows: list[dict[str, Any]]
-    ) -> str:
+    async def _explain(self, question: str, sql: str, rows: list[dict[str, Any]]) -> str:
         llm = self._get_llm()
         prompt = EXPLANATION_PROMPT_TEMPLATE.format(
             question=question,
