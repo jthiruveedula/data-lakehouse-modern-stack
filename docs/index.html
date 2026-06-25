@@ -705,9 +705,10 @@
   <ul class="nav-links" id="nav-links">
     <li><a href="#architecture">Architecture</a></li>
     <li><a href="#features">Features</a></li>
+    <li><a href="#streaming">Streaming</a></li>
+    <li><a href="#data-quality">Quality</a></li>
     <li><a href="#tech-stack">Stack</a></li>
     <li><a href="#code-examples">Code</a></li>
-    <li><a href="#comparison">Compare</a></li>
     <li><a href="https://github.com/jthiruveedula/data-lakehouse-modern-stack" class="nav-cta">GitHub →</a></li>
   </ul>
   <div class="hamburger" id="hamburger" onclick="toggleMenu()">
@@ -1339,6 +1340,204 @@ deduped <span class="kw">AS</span> (
 
 <div class="divider"></div>
 
+<!-- ──────────── STREAMING ──────────── -->
+<section id="streaming">
+  <div class="section-inner">
+    <div class="section-header reveal">
+      <span class="section-tag">Real-Time Ingestion</span>
+      <h2 class="section-title">Structured Streaming &amp; CDC</h2>
+      <p class="section-desc">
+        Sub-minute latency from Kafka to Delta Lake. Debezium CDC captures every database
+        mutation and streams it through the same Bronze→Silver→Gold pipeline.
+      </p>
+    </div>
+
+    <div class="feature-grid reveal" style="margin-bottom:3rem">
+      <div class="feature-card">
+        <div class="feature-icon">⚡</div>
+        <h3>Spark Structured Streaming</h3>
+        <p>Kafka readStream with configurable watermarks, trigger intervals, and exactly-once
+        semantics written to Delta Lake with checkpointing.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔄</div>
+        <h3>Debezium CDC</h3>
+        <p>Captures INSERT / UPDATE / DELETE from PostgreSQL/MySQL via logical replication.
+        Full before/after payloads preserved in Bronze with <code>_cdc_op</code> metadata columns.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">💀</div>
+        <h3>Dead-Letter Queues</h3>
+        <p>Malformed events are routed to a separate dead-letter GCS path with the original
+        bytes and parse error — zero message loss, full auditability.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🐳</div>
+        <h3>Local Dev Stack</h3>
+        <p>One <code>docker compose up</code> brings up Kafka, MinIO, Spark, JupyterLab, and
+        a PostgreSQL source database ready for CDC experimentation.</p>
+      </div>
+    </div>
+
+    <div class="code-showcase reveal">
+      <div class="code-header">
+        <span class="code-lang">Python — Structured Streaming (src/ingestion/streaming_processor.py)</span>
+      </div>
+      <pre class="code-block"><span class="kw">from</span> src.ingestion.streaming_processor <span class="kw">import</span> StreamConfig, StructuredStreamingProcessor
+
+config = StreamConfig(
+    kafka_bootstrap_servers=<span class="str">"kafka:9092"</span>,
+    topics=[<span class="str">"raw.events"</span>, <span class="str">"raw.orders"</span>],
+    checkpoint_location=<span class="str">"gs://bucket/checkpoints/bronze"</span>,
+    output_path=<span class="str">"gs://bucket/bronze"</span>,
+    trigger_interval=<span class="str">"60 seconds"</span>,
+    max_offsets_per_trigger=<span class="num">10_000</span>,
+    output_format=<span class="str">"delta"</span>,
+)
+
+processor = StructuredStreamingProcessor(spark, config)
+processor.start()          <span class="cm"># non-blocking; query runs in background</span>
+processor.await_termination()
+
+<span class="cm"># Status inspection</span>
+<span class="kw">print</span>(processor.status)
+<span class="cm"># {'id': 'abc123', 'active': True, 'message': 'Processing 9876 rows', ...}</span></pre>
+    </div>
+
+    <div class="code-showcase reveal" style="margin-top:2rem">
+      <div class="code-header">
+        <span class="code-lang">Python — CDC Processor (src/ingestion/cdc_processor.py)</span>
+      </div>
+      <pre class="code-block"><span class="kw">from</span> src.ingestion.cdc_processor <span class="kw">import</span> CDCConfig, CDCProcessor
+
+config = CDCConfig(
+    kafka_bootstrap_servers=<span class="str">"kafka:9092"</span>,
+    debezium_topics=[<span class="str">"dbserver1.public.customers"</span>],
+    bronze_output_path=<span class="str">"gs://bucket/bronze/cdc"</span>,
+    checkpoint_location=<span class="str">"gs://bucket/checkpoints/cdc"</span>,
+)
+
+proc = CDCProcessor(config)
+
+<span class="cm"># Parse raw Debezium bytes → CDCEvent</span>
+event = proc.parse_event(raw_kafka_message)
+<span class="cm"># event.op == CDCOperation.UPDATE</span>
+<span class="cm"># event.before == {"status": "pending"}</span>
+<span class="cm"># event.after  == {"status": "shipped"}</span>
+
+<span class="cm"># Batch processing with result summary</span>
+result = proc.process_batch(events)
+<span class="kw">print</span>(result.summary())
+<span class="cm"># customers: +12 ~3 -1 (errors: 0)</span></pre>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ──────────── DATA QUALITY ──────────── -->
+<section id="data-quality">
+  <div class="section-inner">
+    <div class="section-header reveal">
+      <span class="section-tag">Observability</span>
+      <h2 class="section-title">Data Quality &amp; Monitoring</h2>
+      <p class="section-desc">
+        Every pipeline run is gated by automated quality checks. Failures surface as Cloud
+        Monitoring alerts before bad data reaches downstream consumers.
+      </p>
+    </div>
+
+    <div class="feature-grid reveal" style="margin-bottom:3rem">
+      <div class="feature-card">
+        <div class="feature-icon">✅</div>
+        <h3>Fluent Quality Checks</h3>
+        <p>Chain <code>check_not_null</code>, <code>check_unique</code>, <code>check_range</code>,
+        <code>check_freshness</code>, <code>check_accepted_values</code> and more on any Spark table
+        with a single builder API.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📊</div>
+        <h3>Table Profiler</h3>
+        <p>Auto-generate null rates, distinct counts, min/max, percentiles, and top-N values
+        for every column — rendered as a Markdown report for documentation or alerting.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📈</div>
+        <h3>Cloud Monitoring Metrics</h3>
+        <p>Custom metrics written to <code>custom.googleapis.com/lakehouse/*</code> track
+        ingestion throughput, quality pass rates, pipeline duration, and table sizes over time.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔔</div>
+        <h3>Airflow Quality DAG</h3>
+        <p>A dedicated daily DAG runs quality gates per layer. A ShortCircuitOperator halts
+        downstream work if critical checks fail; Slack webhooks send instant alerts.</p>
+      </div>
+    </div>
+
+    <div class="code-showcase reveal">
+      <div class="code-header">
+        <span class="code-lang">Python — DataQualityChecker (src/quality/checker.py)</span>
+      </div>
+      <pre class="code-block"><span class="kw">from</span> src.quality.checker <span class="kw">import</span> DataQualityChecker, CheckSeverity
+<span class="kw">from</span> datetime <span class="kw">import</span> timedelta
+
+report = (
+    DataQualityChecker(spark, <span class="str">"silver.fct_orders"</span>)
+    .check_not_null(<span class="str">"order_id"</span>)
+    .check_unique(<span class="str">"order_id"</span>)
+    .check_accepted_values(<span class="str">"status"</span>, [<span class="str">"pending"</span>, <span class="str">"confirmed"</span>, <span class="str">"shipped"</span>,
+                                          <span class="str">"delivered"</span>, <span class="str">"returned"</span>, <span class="str">"cancelled"</span>])
+    .check_range(<span class="str">"amount"</span>, min_val=<span class="num">0</span>, max_val=<span class="num">1_000_000</span>)
+    .check_freshness(<span class="str">"_silver_ts"</span>, max_age=timedelta(hours=<span class="num">25</span>))
+    .check_row_count(min_rows=<span class="num">1000</span>, severity=CheckSeverity.WARNING)
+    .run()
+)
+
+<span class="kw">print</span>(report.summary())
+<span class="cm"># silver.fct_orders — HEALTHY  ✓ 5 passed  ✗ 0 failed  ⚠ 0 warnings</span>
+
+<span class="kw">if not</span> report.is_healthy:
+    <span class="kw">raise</span> ValueError(<span class="str">f"Quality gate failed: {report.failed_checks()}"</span>)</pre>
+    </div>
+
+    <div class="code-showcase reveal" style="margin-top:2rem">
+      <div class="code-header">
+        <span class="code-lang">Python — LakehouseMetrics (src/monitoring/metrics.py)</span>
+      </div>
+      <pre class="code-block"><span class="kw">from</span> src.monitoring.metrics <span class="kw">import</span> LakehouseMetrics
+
+metrics = LakehouseMetrics(project_id=<span class="str">"my-gcp-project"</span>)
+
+<span class="cm"># Record after every ingestion batch</span>
+metrics.record_ingestion(
+    table=<span class="str">"bronze.stg_events"</span>,
+    layer=<span class="str">"bronze"</span>,
+    rows_written=<span class="num">42_000</span>,
+    duration_seconds=<span class="num">18.4</span>,
+    source=<span class="str">"kafka"</span>,
+)
+
+<span class="cm"># Record quality gate outcome</span>
+metrics.record_quality_check(
+    table=<span class="str">"silver.fct_orders"</span>,
+    checks_passed=<span class="num">5</span>,
+    checks_failed=<span class="num">0</span>,
+)
+
+<span class="cm"># Record full pipeline run</span>
+metrics.record_pipeline_run(
+    pipeline=<span class="str">"medallion_daily"</span>,
+    status=<span class="str">"success"</span>,
+    duration_seconds=<span class="num">312</span>,
+    rows_processed=<span class="num">1_240_000</span>,
+)</pre>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
 <!-- ──────────── COMPARISON ──────────── -->
 <section id="comparison">
   <div class="section-inner">
@@ -1447,7 +1646,13 @@ deduped <span class="kw">AS</span> (
         <div class="step-num">1</div>
         <h3>Clone & Install</h3>
         <p>Clone the repository and install all dependencies including PySpark, Delta Lake, and GCP libraries.</p>
-        <div class="inline-code">git clone https://github.com/jthiruveedula/data-lakehouse-modern-stack<br/>cd data-lakehouse-modern-stack<br/>pip install -r requirements.txt</div>
+        <div class="inline-code">git clone https://github.com/jthiruveedula/data-lakehouse-modern-stack<br/>cd data-lakehouse-modern-stack<br/>make install-dev        # deps + ruff + mypy + pytest<br/>make pre-commit-install  # git hooks</div>
+      </div>
+      <div class="step-card reveal reveal-delay-1">
+        <div class="step-num">1b</div>
+        <h3>Local Dev Stack</h3>
+        <p>Spin up Kafka, MinIO, Spark, JupyterLab and a Postgres CDC source — no GCP account needed for local experimentation.</p>
+        <div class="inline-code">docker compose up -d<br/><br/># MinIO  → http://localhost:9001<br/># Kafka  → http://localhost:8090<br/># Jupyter→ http://localhost:8888  (token: lakehouse)</div>
       </div>
       <div class="step-card reveal reveal-delay-2">
         <div class="step-num">2</div>
