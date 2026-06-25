@@ -8,6 +8,7 @@ google-cloud-bigquery==3.22.0
 google-cloud-storage==2.16.0
 google-cloud-aiplatform==1.53.0
 google-cloud-datacatalog==3.20.0
+google-cloud-monitoring==2.21.0
 
 # dbt
 dbt-core==1.8.2

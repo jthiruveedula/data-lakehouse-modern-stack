@@ -1,0 +1,38 @@
+version: 2
+
+models:
+  - name: stg_events
+    description: "Raw event stream from Kafka/API — append-only Bronze staging"
+    columns:
+      - name: event_id
+        description: "Unique event identifier"
+        tests:
+          - not_null
+          - unique
+
+      - name: event_type
+        description: "Type of event (page_view, purchase, click, etc.)"
+        tests:
+          - not_null
+          - accepted_values:
+              values: [page_view, purchase, click, signup, logout, add_to_cart]
+
+      - name: user_id
+        description: "User who triggered the event"
+        tests:
+          - not_null
+
+      - name: _ingestion_ts
+        description: "Timestamp when the record was ingested into Bronze"
+        tests:
+          - not_null
+
+      - name: _ingestion_date
+        description: "Date partition column derived from _ingestion_ts"
+        tests:
+          - not_null
+
+      - name: _batch_id
+        description: "Identifier for the ingestion batch"
+        tests:
+          - not_null

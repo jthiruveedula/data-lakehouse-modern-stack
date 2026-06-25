@@ -1,0 +1,56 @@
+version: 2
+
+models:
+  - name: agg_revenue_daily
+    description: "Daily revenue aggregation by region and customer tier"
+    columns:
+      - name: order_date
+        description: "Date of the orders (partition key)"
+        tests:
+          - not_null
+
+      - name: region
+        description: "Customer region"
+        tests:
+          - not_null
+
+      - name: customer_tier
+        description: "Customer tier (gold/silver/bronze)"
+        tests:
+          - not_null
+
+      - name: total_revenue
+        description: "Sum of all order amounts for the day/region/tier"
+        tests:
+          - not_null
+
+      - name: order_count
+        description: "Number of distinct orders"
+        tests:
+          - not_null
+
+  - name: agg_customer_ltv
+    description: "Customer lifetime value — one row per customer"
+    columns:
+      - name: customer_id
+        description: "Unique customer identifier"
+        tests:
+          - not_null
+          - unique
+
+      - name: lifetime_revenue
+        description: "Total revenue from completed/non-returned orders"
+        tests:
+          - not_null
+
+      - name: ltv_segment
+        description: "LTV classification bucket"
+        tests:
+          - not_null
+          - accepted_values:
+              values: [Champion, Loyal, Promising, "At Risk"]
+
+      - name: lifetime_orders
+        description: "Total number of non-cancelled, non-returned orders"
+        tests:
+          - not_null

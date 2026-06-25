@@ -1,0 +1,76 @@
+version: 2
+
+models:
+  - name: dim_customers
+    description: "SCD Type 2 customer dimension — tracks historical attribute changes"
+    columns:
+      - name: customer_id
+        description: "Business key — unique per active customer record"
+        tests:
+          - not_null
+
+      - name: email
+        description: "Customer email address"
+        tests:
+          - not_null
+
+      - name: tier
+        description: "Customer tier (gold/silver/bronze)"
+        tests:
+          - not_null
+          - accepted_values:
+              values: [gold, silver, bronze]
+
+      - name: _row_hash
+        description: "SHA-256 hash of SCD2 tracked columns for change detection"
+        tests:
+          - not_null
+
+      - name: _valid_from
+        description: "Timestamp when this record version became active"
+        tests:
+          - not_null
+
+      - name: _is_current
+        description: "True for the latest version of each customer record"
+        tests:
+          - not_null
+
+  - name: fct_orders
+    description: "Deduplicated order fact table — one row per order_id"
+    columns:
+      - name: order_id
+        description: "Unique order identifier"
+        tests:
+          - not_null
+          - unique
+
+      - name: customer_id
+        description: "Foreign key to dim_customers"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_customers')
+              field: customer_id
+
+      - name: amount
+        description: "Order total amount"
+        tests:
+          - not_null
+
+      - name: status
+        description: "Order status"
+        tests:
+          - not_null
+          - accepted_values:
+              values: [pending, confirmed, shipped, delivered, returned, cancelled]
+
+      - name: order_date
+        description: "Date the order was placed"
+        tests:
+          - not_null
+
+      - name: _silver_ts
+        description: "Timestamp when the record was processed into Silver"
+        tests:
+          - not_null
